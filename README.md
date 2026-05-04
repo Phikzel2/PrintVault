@@ -1,4 +1,4 @@
-# STL Library
+# PrintVault
 
 A self-hosted 3D print file library — your personal alternative to Printables, MakerWorld, and Thingiverse. Organize STL, 3MF, GCODE, OBJ, STEP, and AMF files with a searchable web UI, in-browser 3D viewer, and per-printer GCODE management.
 
@@ -28,7 +28,7 @@ A self-hosted 3D print file library — your personal alternative to Printables,
 
 ```bash
 git clone <your-repo-url>
-cd STLLibrary
+cd PrintVault
 
 cp .env.example .env
 # Edit .env — at minimum set a strong POSTGRES_PASSWORD and SECRET_KEY
@@ -46,8 +46,8 @@ docker compose up --build
 Copy `.env.example` to `.env` and edit:
 
 ```env
-POSTGRES_DB=stlibrary
-POSTGRES_USER=stlibrary
+POSTGRES_DB=printvault
+POSTGRES_USER=printvault
 POSTGRES_PASSWORD=changeme        # change this
 SECRET_KEY=changeme-use-a-long-random-string  # change this
 ```
@@ -57,7 +57,7 @@ All settings have safe defaults for local use. Change passwords before exposing 
 ## Architecture
 
 ```
-STLLibrary/
+PrintVault/
 ├── backend/                  # FastAPI app
 │   └── app/
 │       ├── main.py           # App entry + CORS
@@ -143,7 +143,7 @@ To run the backend locally (outside Docker):
 ```bash
 cd backend
 pip install -r requirements.txt
-DATABASE_URL=postgresql://stlibrary:stlibrary@localhost:5432/stlibrary \
+DATABASE_URL=postgresql://printvault:printvault@localhost:5432/printvault \
 UPLOAD_DIR=./uploads \
 uvicorn app.main:app --reload
 ```

@@ -21,7 +21,7 @@ export function Header({ onAddModel }: HeaderProps) {
           <svg className="w-8 h-8 text-brand-500" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span className="font-bold text-lg text-white hidden sm:block">STL Library</span>
+          <span className="font-bold text-lg text-white hidden sm:block">PrintVault</span>
         </Link>
 
         <form onSubmit={handleSearch} className="flex-1 max-w-xl">

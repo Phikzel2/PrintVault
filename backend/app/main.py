@@ -6,7 +6,7 @@ from .routers import models, files, printers, tags
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="STL Library", version="1.0.0")
+app = FastAPI(title="PrintVault", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
