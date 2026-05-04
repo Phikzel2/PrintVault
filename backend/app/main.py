@@ -35,7 +35,7 @@ def _check_upload_dir():
         logger.error("UPLOAD DIR ERROR: %s exists but is NOT writable. Fix volume permissions.", path)
 
 
-app = FastAPI(title="PrintVault", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="PrintVault", version="1.0.0", lifespan=lifespan, redirect_slashes=False)
 
 app.add_middleware(
     CORSMiddleware,
