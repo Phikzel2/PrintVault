@@ -38,7 +38,7 @@ docker compose up --build
 
 | Service | URL |
 |---|---|
-| Library UI | http://localhost:3000 |
+| Library UI | http://localhost:3120 |
 | API (+ Swagger docs) | http://localhost:8000/docs |
 
 ## Configuration
