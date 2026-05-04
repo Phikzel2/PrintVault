@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { modelsApi, printersApi } from "../api/client";
+import { parseUploadError } from "../api/errors";
 import type { Printer } from "../types";
 
 interface UploadModalProps {
@@ -95,8 +96,8 @@ export function UploadModal({ onClose, onSuccess }: UploadModalProps) {
       }
 
       onSuccess(model.id);
-    } catch (e: any) {
-      setError(e?.response?.data?.detail ?? "Upload failed");
+    } catch (e) {
+      setError(parseUploadError(e));
     } finally {
       setUploading(false);
     }

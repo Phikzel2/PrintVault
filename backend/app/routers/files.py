@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 from pathlib import Path
@@ -5,12 +6,15 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..config import settings
 from ..database import get_db
 from ..thumbnail import generate_thumbnail
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["files"])
 
@@ -43,33 +47,73 @@ async def upload_file(
     if not model:
         raise HTTPException(status_code=404, detail="Model not found")
 
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No filename provided")
+
+    max_bytes = settings.max_file_size_mb * 1024 * 1024
     file_type = detect_file_type(file.filename)
     ext = Path(file.filename).suffix.lower()
     unique_name = f"{uuid.uuid4().hex}{ext}"
 
     model_dir = Path(settings.upload_dir) / "models" / str(model_id) / "files"
-    model_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        model_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        logger.error("Cannot create upload directory %s: %s", model_dir, e)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Cannot create upload directory: {e.strerror}. Check that the uploads volume is mounted and writable.",
+        )
+
     file_path = model_dir / unique_name
 
-    content = await file.read()
+    try:
+        content = await file.read()
+    except Exception as e:
+        logger.error("Failed to read uploaded file: %s", e)
+        raise HTTPException(status_code=400, detail=f"Failed to read file: {e}")
+
     file_size = len(content)
-    with open(file_path, "wb") as f:
-        f.write(content)
+    if file_size == 0:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+    if file_size > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large: {file_size / 1024 / 1024:.1f} MB exceeds the {settings.max_file_size_mb} MB limit",
+        )
 
-    db_file = models.ModelFile(
-        model_id=model_id,
-        filename=unique_name,
-        original_filename=file.filename,
-        file_type=file_type,
-        file_path=str(file_path),
-        file_size=file_size,
-        printer_id=printer_id if file_type == "GCODE" else None,
-    )
-    db.add(db_file)
-    db.commit()
-    db.refresh(db_file)
+    try:
+        with open(file_path, "wb") as f:
+            f.write(content)
+    except OSError as e:
+        logger.error("Failed to write file %s: %s", file_path, e)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save file to disk: {e.strerror}. Check available disk space and volume permissions.",
+        )
 
-    # Generate thumbnail if model has no thumbnail yet and file is 3D
+    try:
+        db_file = models.ModelFile(
+            model_id=model_id,
+            filename=unique_name,
+            original_filename=file.filename,
+            file_type=file_type,
+            file_path=str(file_path),
+            file_size=file_size,
+            printer_id=printer_id if file_type == "GCODE" else None,
+        )
+        db.add(db_file)
+        db.commit()
+        db.refresh(db_file)
+    except SQLAlchemyError as e:
+        db.rollback()
+        if file_path.exists():
+            file_path.unlink(missing_ok=True)
+        logger.error("Database error saving file record: %s", e)
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+    # Generate thumbnail — non-fatal if it fails
     if not model.thumbnail_path and file_type in ("STL", "3MF", "OBJ"):
         thumb_dir = Path(settings.upload_dir) / "models" / str(model_id)
         thumb_path = str(thumb_dir / "thumbnail.jpg")

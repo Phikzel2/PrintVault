@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { modelsApi, printersApi } from "../api/client";
+import { parseUploadError } from "../api/errors";
 import type { Printer } from "../types";
 
 interface AddFilesModalProps {
@@ -54,8 +55,8 @@ export function AddFilesModal({ modelId, onClose, onSuccess }: AddFilesModalProp
         await modelsApi.uploadFile(modelId, file, printerId ?? undefined);
       }
       onSuccess();
-    } catch (e: any) {
-      setError(e?.response?.data?.detail ?? "Upload failed");
+    } catch (e) {
+      setError(parseUploadError(e));
     } finally {
       setUploading(false);
     }
