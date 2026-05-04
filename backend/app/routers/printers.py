@@ -6,12 +6,12 @@ from ..database import get_db
 router = APIRouter(prefix="/printers", tags=["printers"])
 
 
-@router.get("/", response_model=list[schemas.Printer])
+@router.get("", response_model=list[schemas.Printer])
 def list_printers(db: Session = Depends(get_db)):
     return db.query(models.Printer).order_by(models.Printer.name).all()
 
 
-@router.post("/", response_model=schemas.Printer, status_code=201)
+@router.post("", response_model=schemas.Printer, status_code=201)
 def create_printer(data: schemas.PrinterCreate, db: Session = Depends(get_db)):
     printer = models.Printer(**data.model_dump())
     db.add(printer)

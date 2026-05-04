@@ -50,7 +50,7 @@ def build_summary(model: models.PrintModel) -> schemas.PrintModelSummary:
     )
 
 
-@router.get("/", response_model=schemas.PaginatedModels)
+@router.get("", response_model=schemas.PaginatedModels)
 def list_models(
     search: str = Query(None),
     tag: list[str] = Query(None),
@@ -96,7 +96,7 @@ def list_models(
     )
 
 
-@router.post("/", response_model=schemas.PrintModel, status_code=201)
+@router.post("", response_model=schemas.PrintModel, status_code=201)
 def create_model(data: schemas.PrintModelCreate, db: Session = Depends(get_db)):
     tag_objs = get_or_create_tags(db, data.tags)
     model = models.PrintModel(
