@@ -20,8 +20,7 @@ function FileBadge({ label, count, color }: { label: string; count: number; colo
 export function ModelCard({ model }: ModelCardProps) {
   const { user } = useAuth();
   const thumbUrl = model.thumbnail_path ? modelsApi.thumbnailUrl(model.id) : null;
-  const isOwner = user && model.owner_id === user.id;
-  const showPrivateBadge = isOwner && !model.is_public;
+  const showPublicBadge = model.is_public;
 
   return (
     <Link
@@ -50,13 +49,13 @@ export function ModelCard({ model }: ModelCardProps) {
           <FileBadge label="3MF" count={model.threemf_count} color="bg-purple-900/80 text-purple-300" />
           <FileBadge label="GCODE" count={model.gcode_count} color="bg-green-900/80 text-green-300" />
         </div>
-        {showPrivateBadge && (
+        {showPublicBadge && (
           <div className="absolute top-2 right-2">
             <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-gray-900/80 text-gray-400 rounded-full">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
               </svg>
-              Private
+              Public
             </span>
           </div>
         )}
