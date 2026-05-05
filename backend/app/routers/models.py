@@ -180,3 +180,31 @@ def get_thumbnail(model_id: int, db: Session = Depends(get_db)):
     if not thumb_path.exists():
         raise HTTPException(status_code=404, detail="No thumbnail")
     return FileResponse(str(thumb_path), media_type="image/jpeg")
+
+
+@router.post("/{model_id}/thumbnail", status_code=200)
+def set_thumbnail(model_id: int, file_id: int = Query(...), db: Session = Depends(get_db)):
+    import time
+    from ..thumbnail import generate_thumbnail
+
+    model = db.query(models.PrintModel).filter(models.PrintModel.id == model_id).first()
+    if not model:
+        raise HTTPException(status_code=404, detail="Model not found")
+
+    db_file = (
+        db.query(models.ModelFile)
+        .filter(models.ModelFile.id == file_id, models.ModelFile.model_id == model_id)
+        .first()
+    )
+    if not db_file:
+        raise HTTPException(status_code=404, detail="File not found")
+    if db_file.file_type not in ("STL", "3MF", "OBJ"):
+        raise HTTPException(status_code=400, detail="File type does not support thumbnail generation")
+
+    thumb_path = str(Path(settings.upload_dir) / "models" / str(model_id) / "thumbnail.jpg")
+    if not generate_thumbnail(db_file.file_path, thumb_path):
+        raise HTTPException(status_code=500, detail="Thumbnail generation failed")
+
+    model.thumbnail_path = f"/api/models/{model_id}/thumbnail?v={int(time.time())}"
+    db.commit()
+    return {"thumbnail_path": model.thumbnail_path}

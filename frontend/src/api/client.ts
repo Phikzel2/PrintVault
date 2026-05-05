@@ -33,6 +33,8 @@ export const modelsApi = {
   },
 
   thumbnailUrl: (id: number) => `/api/models/${id}/thumbnail`,
+  setThumbnail: (modelId: number, fileId: number) =>
+    api.post(`/models/${modelId}/thumbnail`, null, { params: { file_id: fileId } }),
 };
 
 export const printersApi = {

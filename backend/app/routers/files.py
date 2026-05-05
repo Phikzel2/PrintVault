@@ -117,10 +117,11 @@ async def upload_file(
 
     # Generate thumbnail — non-fatal if it fails
     if not model.thumbnail_path and file_type in ("STL", "3MF", "OBJ"):
+        import time
         thumb_dir = Path(settings.upload_dir) / "models" / str(model_id)
         thumb_path = str(thumb_dir / "thumbnail.jpg")
         if generate_thumbnail(str(file_path), thumb_path):
-            model.thumbnail_path = f"/api/models/{model_id}/thumbnail"
+            model.thumbnail_path = f"/api/models/{model_id}/thumbnail?v={int(time.time())}"
             db.commit()
 
     return db_file
