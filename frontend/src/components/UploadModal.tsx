@@ -145,11 +145,11 @@ export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalPro
           {(["files", "meta"] as Step[]).map((s, i) => (
             <button
               key={s}
-              onClick={() => step === "meta" && s === "files" ? setStep("files") : undefined}
+              onClick={() => setStep(s)}
               className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${
                 step === s
                   ? "border-brand-500 text-brand-400"
-                  : "border-transparent text-gray-500"
+                  : "border-transparent text-gray-500 hover:text-gray-300"
               }`}
             >
               {i + 1}. {s === "files" ? "Files" : "Details"}
