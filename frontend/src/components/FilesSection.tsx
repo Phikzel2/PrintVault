@@ -28,6 +28,7 @@ function TypeBadge({ type }: { type: string }) {
 function DownloadBtn({ file }: { file: ModelFile }) {
   return (
     <a
+      draggable={false}
       href={filesApi.downloadUrl(file.id)}
       download={file.original_filename}
       className="btn-ghost p-1.5 rounded shrink-0"
@@ -73,18 +74,19 @@ function GcodeRow({
 }) {
   return (
     <div
-      draggable
+      draggable={true}
       onDragStart={(e) => {
         e.dataTransfer.setData("text/plain", String(file.id));
         e.dataTransfer.effectAllowed = "move";
-        onDragStart(file.id);
+        // Defer state update so the drag ghost captures the pre-fade DOM
+        setTimeout(() => onDragStart(file.id), 0);
       }}
       onDragEnd={onDragEnd}
-      className={`flex flex-col gap-1 py-2 px-2 rounded-lg transition-opacity select-none ${
+      className={`flex flex-col gap-1 py-2 px-2 rounded-lg transition-opacity ${
         isDragging ? "opacity-40" : "hover:bg-gray-800/60 cursor-grab active:cursor-grabbing"
       }`}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 select-none">
         {/* drag handle */}
         <svg className="w-3.5 h-3.5 text-gray-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path d="M7 2a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zM17 2a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -117,7 +119,8 @@ function GcodeRow({
 
 function SourceGroup({
   sourceFile, gcodes, printers, isDropTarget, isCollapsed,
-  activeDrag, draggingId, onToggle, onDragOver, onDragLeave, onDrop,
+  activeDrag, draggingId, onToggle,
+  onDragEnter, onDragOver, onDragLeave, onDrop,
   onDragStart, onDragEnd, onPrinterChange, onDelete,
 }: {
   sourceFile: ModelFile;
@@ -128,6 +131,7 @@ function SourceGroup({
   activeDrag: boolean;
   draggingId: number | null;
   onToggle: () => void;
+  onDragEnter: (e: React.DragEvent) => void;
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
@@ -138,6 +142,7 @@ function SourceGroup({
 }) {
   return (
     <div
+      onDragEnter={onDragEnter}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
@@ -150,7 +155,7 @@ function SourceGroup({
       }`}
     >
       {/* Source file header */}
-      <div className="flex items-center gap-2 px-2 py-2">
+      <div className="flex items-center gap-2 px-2 py-2 select-none">
         <button
           onClick={onToggle}
           className="btn-ghost p-1 rounded shrink-0 text-gray-500"
@@ -240,19 +245,20 @@ export function FilesSection({ files, printers, onDelete, onPrinterChange, onSou
   const toggle = (id: number) =>
     setCollapsed((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
-  const handleDrop = async (target: number | "unlinked") => {
-    if (draggingId == null) return;
-    await onSourceChange(draggingId, target === "unlinked" ? null : target);
-    setDraggingId(null);
-    setDropTarget(null);
-  };
-
-  const dragOverProps = (target: number | "unlinked") => ({
-    onDragOver: (e: React.DragEvent) => { e.preventDefault(); setDropTarget(target); },
+  // Read ID from dataTransfer so there's no stale-closure dependency on draggingId state
+  const dropProps = (target: number | "unlinked") => ({
+    onDragEnter: (e: React.DragEvent) => { e.preventDefault(); setDropTarget(target); },
+    onDragOver: (e: React.DragEvent) => { e.preventDefault(); },
     onDragLeave: (e: React.DragEvent) => {
       if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropTarget(null);
     },
-    onDrop: (e: React.DragEvent) => { e.preventDefault(); handleDrop(target); },
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      const id = Number(e.dataTransfer.getData("text/plain"));
+      if (id) onSourceChange(id, target === "unlinked" ? null : target as number);
+      setDraggingId(null);
+      setDropTarget(null);
+    },
   });
 
   const activeDrag = draggingId != null;
@@ -282,7 +288,7 @@ export function FilesSection({ files, printers, onDelete, onPrinterChange, onSou
             activeDrag={activeDrag}
             draggingId={draggingId}
             onToggle={() => toggle(sf.id)}
-            {...dragOverProps(sf.id)}
+            {...dropProps(sf.id)}
             onDragStart={setDraggingId}
             onDragEnd={() => setDraggingId(null)}
             onPrinterChange={onPrinterChange}
@@ -293,7 +299,7 @@ export function FilesSection({ files, printers, onDelete, onPrinterChange, onSou
         {/* Unlinked GCODEs */}
         {(unlinkedGcodes.length > 0 || (activeDrag && sourceFiles.length > 0)) && (
           <div
-            {...dragOverProps("unlinked")}
+            {...dropProps("unlinked")}
             className={`rounded-xl border transition-colors mt-1 ${
               dropTarget === "unlinked"
                 ? "border-gray-500 bg-gray-800/40"
