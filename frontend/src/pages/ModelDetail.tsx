@@ -3,95 +3,9 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { modelsApi, filesApi, printersApi } from "../api/client";
 import { ModelViewer } from "../components/ModelViewer";
 import { AddFilesModal } from "../components/AddFilesModal";
-import type { PrintModel, Printer, ModelFile } from "../types";
+import { FilesSection } from "../components/FilesSection";
+import type { PrintModel, Printer } from "../types";
 
-function formatBytes(bytes: number | null) {
-  if (!bytes) return "";
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
-const TYPE_COLORS: Record<string, string> = {
-  STL: "bg-blue-900/50 text-blue-300 border-blue-800",
-  "3MF": "bg-purple-900/50 text-purple-300 border-purple-800",
-  GCODE: "bg-green-900/50 text-green-300 border-green-800",
-  OBJ: "bg-yellow-900/50 text-yellow-300 border-yellow-800",
-  STEP: "bg-orange-900/50 text-orange-300 border-orange-800",
-};
-
-function FileRow({ file, printers, allFiles, onDelete, onPrinterChange, onSourceChange }: {
-  file: ModelFile;
-  printers: Printer[];
-  allFiles: ModelFile[];
-  onDelete: (id: number) => void;
-  onPrinterChange: (fileId: number, printerId: number | null) => void;
-  onSourceChange: (fileId: number, sourceFileId: number | null) => void;
-}) {
-  const color = TYPE_COLORS[file.file_type] ?? "bg-gray-800 text-gray-300 border-gray-700";
-  const isGcode = file.file_type === "GCODE";
-  const sourceOptions = allFiles.filter((f) => f.id !== file.id);
-
-  return (
-    <div className="py-2 border-b border-gray-800 last:border-0">
-      <div className="flex items-center gap-3">
-        <span className={`text-xs px-2 py-0.5 rounded border font-mono shrink-0 ${color}`}>
-          {file.file_type}
-        </span>
-        <span className="text-sm text-gray-300 flex-1 truncate" title={file.original_filename}>
-          {file.original_filename}
-        </span>
-        <span className="text-xs text-gray-600 shrink-0">{formatBytes(file.file_size)}</span>
-        <a
-          href={filesApi.downloadUrl(file.id)}
-          download={file.original_filename}
-          className="btn-ghost p-1.5 rounded shrink-0"
-          title="Download"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-        </a>
-        <button
-          onClick={() => onDelete(file.id)}
-          className="btn-ghost p-1.5 rounded shrink-0 text-red-500 hover:text-red-400"
-          title="Delete file"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-        </button>
-      </div>
-      {isGcode && (printers.length > 0 || sourceOptions.length > 0) && (
-        <div className="flex gap-2 mt-1 pl-1">
-          {sourceOptions.length > 0 && (
-            <select
-              value={file.source_file_id ?? ""}
-              onChange={(e) => onSourceChange(file.id, e.target.value ? Number(e.target.value) : null)}
-              className="text-xs bg-gray-900 border border-gray-700 rounded px-2 py-1 text-gray-400 flex-1"
-            >
-              <option value="">Sliced from…</option>
-              {sourceOptions.map((f) => (
-                <option key={f.id} value={f.id}>{f.original_filename}</option>
-              ))}
-            </select>
-          )}
-          {printers.length > 0 && (
-            <select
-              value={file.printer_id ?? ""}
-              onChange={(e) => onPrinterChange(file.id, e.target.value ? Number(e.target.value) : null)}
-              className="text-xs bg-gray-900 border border-gray-700 rounded px-2 py-1 text-gray-400 flex-1"
-            >
-              <option value="">No printer</option>
-              {printers.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function ModelDetail() {
   const { id } = useParams<{ id: string }>();
@@ -177,18 +91,6 @@ export function ModelDetail() {
     );
   }
 
-  const sourceFiles = model.files.filter((f) => f.file_type !== "GCODE");
-  const gcodes = model.files.filter((f) => f.file_type === "GCODE");
-  const gcodesBySource: Record<number, ModelFile[]> = {};
-  const unlinkedGcodes: ModelFile[] = [];
-  for (const g of gcodes) {
-    if (g.source_file_id != null) {
-      gcodesBySource[g.source_file_id] = [...(gcodesBySource[g.source_file_id] ?? []), g];
-    } else {
-      unlinkedGcodes.push(g);
-    }
-  }
-
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <div className="mb-4">
@@ -255,41 +157,14 @@ export function ModelDetail() {
             )}
           </div>
 
-          {/* Files */}
-          <div className="card p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-gray-300">Files</h2>
-              <button onClick={() => setShowAddFiles(true)} className="btn-ghost text-xs px-2 py-1 rounded">
-                + Add files
-              </button>
-            </div>
-
-            {sourceFiles.map((f) => (
-              <div key={f.id}>
-                <FileRow file={f} printers={printers} allFiles={sourceFiles} onDelete={deleteFile} onPrinterChange={changePrinter} onSourceChange={changeSource} />
-                {gcodesBySource[f.id]?.map((g) => (
-                  <div key={g.id} className="ml-4 border-l-2 border-gray-800 pl-2">
-                    <FileRow file={g} printers={printers} allFiles={sourceFiles} onDelete={deleteFile} onPrinterChange={changePrinter} onSourceChange={changeSource} />
-                  </div>
-                ))}
-              </div>
-            ))}
-
-            {unlinkedGcodes.length > 0 && (
-              <div className={sourceFiles.length > 0 ? "mt-3 pt-3 border-t border-gray-800" : ""}>
-                {sourceFiles.length > 0 && (
-                  <p className="text-xs text-gray-600 mb-1">Unlinked GCODE</p>
-                )}
-                {unlinkedGcodes.map((f) => (
-                  <FileRow key={f.id} file={f} printers={printers} allFiles={sourceFiles} onDelete={deleteFile} onPrinterChange={changePrinter} onSourceChange={changeSource} />
-                ))}
-              </div>
-            )}
-
-            {model.files.length === 0 && (
-              <p className="text-sm text-gray-600 text-center py-4">No files yet</p>
-            )}
-          </div>
+          <FilesSection
+            files={model.files}
+            printers={printers}
+            onDelete={deleteFile}
+            onPrinterChange={changePrinter}
+            onSourceChange={changeSource}
+            onAddFiles={() => setShowAddFiles(true)}
+          />
 
           {/* Danger zone */}
           <div className="card p-4 border-red-900/50">
