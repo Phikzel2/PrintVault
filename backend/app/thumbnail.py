@@ -42,14 +42,12 @@ def generate_thumbnail(file_path: str, output_path: str) -> bool:
 
         vertices = np.array(mesh.vertices)
         faces = np.array(mesh.faces)
-        normals = np.array(mesh.face_normals)
 
         # Subsample for performance on large meshes
         max_faces = 10000
         if len(faces) > max_faces:
             indices = np.random.choice(len(faces), max_faces, replace=False)
             faces = faces[indices]
-            normals = normals[indices]
 
         # Center and normalize
         center = vertices.mean(axis=0)
@@ -58,21 +56,15 @@ def generate_thumbnail(file_path: str, output_path: str) -> bool:
         if scale > 0:
             vertices = vertices / scale
 
-        # Lambertian shading — avoids wireframe bleed-through on complex geometry
-        light = np.array([0.6, 0.8, 1.0])
-        light = light / np.linalg.norm(light)
-        diffuse = np.clip(normals @ light, 0, 1)
-        brightness = 0.25 + 0.75 * diffuse
-        base = np.array([0.31, 0.27, 0.90])  # #4f46e5
-        face_colors = np.clip(np.outer(brightness, base), 0, 1)
-
         fig = plt.figure(figsize=(4, 3), facecolor="#111827")
         ax = fig.add_subplot(111, projection="3d", facecolor="#111827")
 
         tri = Poly3DCollection(
             vertices[faces],
-            facecolors=face_colors,
-            edgecolor="none",
+            alpha=0.9,
+            facecolor="#4f46e5",
+            edgecolor="#111827",  # match background so edges are invisible
+            linewidth=0.2,
         )
         ax.add_collection3d(tri)
 
