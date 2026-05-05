@@ -10,7 +10,7 @@ interface UploadModalProps {
   onSuccess: (modelId: number) => void;
 }
 
-type Step = "meta" | "files";
+type Step = "files" | "meta";
 
 const ACCEPTED_TYPES = {
   "model/stl": [".stl"],
@@ -32,15 +32,26 @@ function getFileTypeLabel(name: string) {
   return map[ext] ?? "OTHER";
 }
 
+function fileToModelName(filename: string): string {
+  return filename
+    .replace(/\.[^.]+$/, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^\w/, (c) => c.toUpperCase());
+}
+
 interface PendingFile {
   file: File;
   printerId: number | null;
-  sourcePendingIdx: number | null; // index of the STL/3MF in pendingFiles this GCODE was sliced from
+  sourcePendingIdx: number | null;
 }
 
 export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalProps) {
-  const [step, setStep] = useState<Step>("meta");
-  const [name, setName] = useState("");
+  const [step, setStep] = useState<Step>("files");
+  const [name, setName] = useState(() =>
+    initialFiles?.length ? fileToModelName(initialFiles[0].name) : "",
+  );
   const [description, setDescription] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [license, setLicense] = useState("");
@@ -61,6 +72,10 @@ export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalPro
       ...prev,
       ...accepted.map((f) => ({ file: f, printerId: null, sourcePendingIdx: null })),
     ]);
+    // Auto-fill name from the first dropped file if the field is still empty
+    if (accepted.length > 0) {
+      setName((prev) => prev || fileToModelName(accepted[0].name));
+    }
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -93,14 +108,12 @@ export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalPro
         tags,
       });
 
-      // Upload all files and track resulting IDs by pending index
       const uploadedIds: number[] = [];
       for (const { file, printerId } of pendingFiles) {
         const { data: uploaded } = await modelsApi.uploadFile(model.id, file, printerId ?? undefined);
         uploadedIds.push(uploaded.id);
       }
 
-      // Resolve source file links now that we have real IDs
       for (let i = 0; i < pendingFiles.length; i++) {
         const { sourcePendingIdx } = pendingFiles[i];
         if (sourcePendingIdx != null && uploadedIds[sourcePendingIdx] != null) {
@@ -129,17 +142,17 @@ export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalPro
         </div>
 
         <div className="flex border-b border-gray-800">
-          {(["meta", "files"] as Step[]).map((s, i) => (
+          {(["files", "meta"] as Step[]).map((s, i) => (
             <button
               key={s}
-              onClick={() => step === "files" && s === "meta" ? setStep("meta") : undefined}
+              onClick={() => step === "meta" && s === "files" ? setStep("files") : undefined}
               className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${
                 step === s
                   ? "border-brand-500 text-brand-400"
                   : "border-transparent text-gray-500"
               }`}
             >
-              {i + 1}. {s === "meta" ? "Details" : "Files"}
+              {i + 1}. {s === "files" ? "Files" : "Details"}
               {s === "files" && pendingFiles.length > 0 && (
                 <span className="ml-1.5 text-xs bg-brand-600/30 text-brand-400 px-1.5 py-0.5 rounded-full">
                   {pendingFiles.length}
@@ -150,68 +163,7 @@ export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalPro
         </div>
 
         <div className="p-6 flex flex-col gap-4 flex-1">
-          {step === "meta" ? (
-            <>
-              <div>
-                <label className="label">Name *</label>
-                <input
-                  className="input"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Benchy 3D Boat"
-                />
-              </div>
-              <div>
-                <label className="label">Description</label>
-                <textarea
-                  className="input resize-none"
-                  rows={3}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Optional description..."
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="label">Source URL</label>
-                  <input
-                    className="input"
-                    value={sourceUrl}
-                    onChange={(e) => setSourceUrl(e.target.value)}
-                    placeholder="https://printables.com/..."
-                  />
-                </div>
-                <div>
-                  <label className="label">License</label>
-                  <input
-                    className="input"
-                    value={license}
-                    onChange={(e) => setLicense(e.target.value)}
-                    placeholder="CC BY 4.0"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="label">Tags (comma-separated)</label>
-                <input
-                  className="input"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  placeholder="functional, household, tool..."
-                />
-              </div>
-              <button
-                className="btn-primary self-end"
-                onClick={() => {
-                  if (!name.trim()) return setError("Name is required");
-                  setError(null);
-                  setStep("files");
-                }}
-              >
-                Next: Add Files
-              </button>
-            </>
-          ) : (
+          {step === "files" ? (
             <>
               <div
                 {...getRootProps()}
@@ -283,6 +235,65 @@ export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalPro
                   })}
                 </div>
               )}
+
+              <button
+                className="btn-primary self-end"
+                onClick={() => { setError(null); setStep("meta"); }}
+              >
+                Next: Add Details
+              </button>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="label">Name *</label>
+                <input
+                  className="input"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Benchy 3D Boat"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="label">Description</label>
+                <textarea
+                  className="input resize-none"
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Optional description..."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Source URL</label>
+                  <input
+                    className="input"
+                    value={sourceUrl}
+                    onChange={(e) => setSourceUrl(e.target.value)}
+                    placeholder="https://printables.com/..."
+                  />
+                </div>
+                <div>
+                  <label className="label">License</label>
+                  <input
+                    className="input"
+                    value={license}
+                    onChange={(e) => setLicense(e.target.value)}
+                    placeholder="CC BY 4.0"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="label">Tags (comma-separated)</label>
+                <input
+                  className="input"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  placeholder="functional, household, tool..."
+                />
+              </div>
             </>
           )}
         </div>
@@ -293,9 +304,9 @@ export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalPro
           </div>
         )}
 
-        {step === "files" && (
+        {step === "meta" && (
           <div className="flex justify-between items-center p-6 border-t border-gray-800 gap-3">
-            <button className="btn-secondary" onClick={() => setStep("meta")}>
+            <button className="btn-secondary" onClick={() => setStep("files")}>
               Back
             </button>
             <button
