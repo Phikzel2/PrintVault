@@ -1,4 +1,6 @@
 import json
+import shutil
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -6,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..auth import get_current_user, hash_password, user_to_schema, verify_password
+from ..config import settings
 from ..database import get_db
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -60,6 +63,20 @@ def delete_user(
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Delete private models + their files on disk before removing the user.
+    # Public models stay: the FK ON DELETE SET NULL will clear their owner_id.
+    private_models = (
+        db.query(models.PrintModel)
+        .filter(models.PrintModel.owner_id == user_id, models.PrintModel.is_public == False)  # noqa: E712
+        .all()
+    )
+    for m in private_models:
+        model_dir = Path(settings.upload_dir) / "models" / str(m.id)
+        if model_dir.exists():
+            shutil.rmtree(model_dir)
+        db.delete(m)
+
     db.delete(user)
     db.commit()
 
