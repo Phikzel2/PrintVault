@@ -111,13 +111,13 @@ async def _fetch_thingiverse(thing_id: str) -> ImportPreview:
 
 async def _fetch_printables(model_id: str) -> ImportPreview:
     query = """
-    query PrintDetail($id: ID!) {
+    query PrintDetail($id: Int!) {
       print(id: $id) {
         id
         name
         description
         summary
-        licenseParent { name }
+        license { name }
         tags { name }
         stls { name fileSize fileDownloadUrl }
         gcodes { name fileSize fileDownloadUrl }
@@ -128,10 +128,12 @@ async def _fetch_printables(model_id: str) -> ImportPreview:
     async with httpx.AsyncClient(timeout=15.0) as client:
         r = await client.post(
             "https://api.printables.com/graphql/",
-            json={"query": query, "variables": {"id": model_id}},
-            headers={"Content-Type": "application/json"},
+            json={"query": query, "variables": {"id": int(model_id)}},
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
         )
-        r.raise_for_status()
+        if not r.is_success:
+            logger.error("Printables API %s: %s", r.status_code, r.text[:500])
+            raise HTTPException(502, f"Printables API error ({r.status_code}): {r.text[:200]}")
 
     body = r.json()
     if errors := body.get("errors"):
@@ -155,7 +157,7 @@ async def _fetch_printables(model_id: str) -> ImportPreview:
         if url:
             files.append(ImportFile(name=f["name"], download_url=url, size=f.get("fileSize"), file_type="STL"))
 
-    license_name = (p.get("licenseParent") or {}).get("name")
+    license_name = (p.get("license") or {}).get("name")
     description = p.get("description") or p.get("summary")
 
     return ImportPreview(
