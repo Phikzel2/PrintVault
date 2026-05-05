@@ -119,9 +119,9 @@ async def _fetch_printables(model_id: str) -> ImportPreview:
         summary
         license { name }
         tags { name }
-        stls { name fileSize fileDownloadUrl }
-        gcodes { name fileSize fileDownloadUrl }
-        slas { name fileSize fileDownloadUrl }
+        stls { name fileSize url }
+        gcodes { name fileSize url }
+        slas { name fileSize url }
       }
     }
     """
@@ -145,17 +145,14 @@ async def _fetch_printables(model_id: str) -> ImportPreview:
 
     files: list[ImportFile] = []
     for f in (p.get("stls") or []):
-        url = f.get("fileDownloadUrl") or f.get("downloadUrl")
-        if url:
-            files.append(ImportFile(name=f["name"], download_url=url, size=f.get("fileSize"), file_type="STL"))
+        if f.get("url"):
+            files.append(ImportFile(name=f["name"], download_url=f["url"], size=f.get("fileSize"), file_type="STL"))
     for f in (p.get("gcodes") or []):
-        url = f.get("fileDownloadUrl") or f.get("downloadUrl")
-        if url:
-            files.append(ImportFile(name=f["name"], download_url=url, size=f.get("fileSize"), file_type="GCODE"))
+        if f.get("url"):
+            files.append(ImportFile(name=f["name"], download_url=f["url"], size=f.get("fileSize"), file_type="GCODE"))
     for f in (p.get("slas") or []):
-        url = f.get("fileDownloadUrl") or f.get("downloadUrl")
-        if url:
-            files.append(ImportFile(name=f["name"], download_url=url, size=f.get("fileSize"), file_type="STL"))
+        if f.get("url"):
+            files.append(ImportFile(name=f["name"], download_url=f["url"], size=f.get("fileSize"), file_type="STL"))
 
     license_name = (p.get("license") or {}).get("name")
     description = p.get("description") or p.get("summary")
