@@ -45,6 +45,7 @@ class ModelFileBase(BaseModel):
     file_type: str
     file_size: Optional[int] = None
     printer_id: Optional[int] = None
+    source_file_id: Optional[int] = None
 
 
 class ModelFile(ModelFileBase):

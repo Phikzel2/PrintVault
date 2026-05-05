@@ -19,53 +19,76 @@ const TYPE_COLORS: Record<string, string> = {
   STEP: "bg-orange-900/50 text-orange-300 border-orange-800",
 };
 
-function FileRow({ file, printers, onDelete, onPrinterChange }: {
+function FileRow({ file, printers, allFiles, onDelete, onPrinterChange, onSourceChange }: {
   file: ModelFile;
   printers: Printer[];
+  allFiles: ModelFile[];
   onDelete: (id: number) => void;
   onPrinterChange: (fileId: number, printerId: number | null) => void;
+  onSourceChange: (fileId: number, sourceFileId: number | null) => void;
 }) {
   const color = TYPE_COLORS[file.file_type] ?? "bg-gray-800 text-gray-300 border-gray-700";
+  const isGcode = file.file_type === "GCODE";
+  const sourceOptions = allFiles.filter((f) => f.id !== file.id);
+
   return (
-    <div className="flex items-center gap-3 py-2 border-b border-gray-800 last:border-0">
-      <span className={`text-xs px-2 py-0.5 rounded border font-mono shrink-0 ${color}`}>
-        {file.file_type}
-      </span>
-      <span className="text-sm text-gray-300 flex-1 truncate" title={file.original_filename}>
-        {file.original_filename}
-      </span>
-      <span className="text-xs text-gray-600 shrink-0">{formatBytes(file.file_size)}</span>
-      {file.file_type === "GCODE" && printers.length > 0 && (
-        <select
-          value={file.printer_id ?? ""}
-          onChange={(e) => onPrinterChange(file.id, e.target.value ? Number(e.target.value) : null)}
-          className="text-xs bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-300 shrink-0 max-w-[140px]"
+    <div className="py-2 border-b border-gray-800 last:border-0">
+      <div className="flex items-center gap-3">
+        <span className={`text-xs px-2 py-0.5 rounded border font-mono shrink-0 ${color}`}>
+          {file.file_type}
+        </span>
+        <span className="text-sm text-gray-300 flex-1 truncate" title={file.original_filename}>
+          {file.original_filename}
+        </span>
+        <span className="text-xs text-gray-600 shrink-0">{formatBytes(file.file_size)}</span>
+        <a
+          href={filesApi.downloadUrl(file.id)}
+          download={file.original_filename}
+          className="btn-ghost p-1.5 rounded shrink-0"
+          title="Download"
         >
-          <option value="">No printer</option>
-          {printers.map((p) => (
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
-        </select>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+        </a>
+        <button
+          onClick={() => onDelete(file.id)}
+          className="btn-ghost p-1.5 rounded shrink-0 text-red-500 hover:text-red-400"
+          title="Delete file"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      </div>
+      {isGcode && (printers.length > 0 || sourceOptions.length > 0) && (
+        <div className="flex gap-2 mt-1 pl-1">
+          {sourceOptions.length > 0 && (
+            <select
+              value={file.source_file_id ?? ""}
+              onChange={(e) => onSourceChange(file.id, e.target.value ? Number(e.target.value) : null)}
+              className="text-xs bg-gray-900 border border-gray-700 rounded px-2 py-1 text-gray-400 flex-1"
+            >
+              <option value="">Sliced from…</option>
+              {sourceOptions.map((f) => (
+                <option key={f.id} value={f.id}>{f.original_filename}</option>
+              ))}
+            </select>
+          )}
+          {printers.length > 0 && (
+            <select
+              value={file.printer_id ?? ""}
+              onChange={(e) => onPrinterChange(file.id, e.target.value ? Number(e.target.value) : null)}
+              className="text-xs bg-gray-900 border border-gray-700 rounded px-2 py-1 text-gray-400 flex-1"
+            >
+              <option value="">No printer</option>
+              {printers.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
       )}
-      <a
-        href={filesApi.downloadUrl(file.id)}
-        download={file.original_filename}
-        className="btn-ghost p-1.5 rounded shrink-0"
-        title="Download"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-        </svg>
-      </a>
-      <button
-        onClick={() => onDelete(file.id)}
-        className="btn-ghost p-1.5 rounded shrink-0 text-red-500 hover:text-red-400"
-        title="Delete file"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
-      </button>
     </div>
   );
 }
@@ -127,6 +150,11 @@ export function ModelDetail() {
     loadModel();
   };
 
+  const changeSource = async (fileId: number, sourceFileId: number | null) => {
+    await filesApi.assignSource(fileId, sourceFileId);
+    loadModel();
+  };
+
   const deleteModel = async () => {
     await modelsApi.delete(modelId);
     navigate("/");
@@ -149,14 +177,15 @@ export function ModelDetail() {
     );
   }
 
-  const gcodeByPrinter: Record<string, ModelFile[]> = {};
-  const gcodeNoPrinter: ModelFile[] = [];
-  for (const f of model.files.filter((f) => f.file_type === "GCODE")) {
-    if (f.printer) {
-      const key = f.printer.name;
-      gcodeByPrinter[key] = [...(gcodeByPrinter[key] ?? []), f];
+  const sourceFiles = model.files.filter((f) => f.file_type !== "GCODE");
+  const gcodes = model.files.filter((f) => f.file_type === "GCODE");
+  const gcodesBySource: Record<number, ModelFile[]> = {};
+  const unlinkedGcodes: ModelFile[] = [];
+  for (const g of gcodes) {
+    if (g.source_file_id != null) {
+      gcodesBySource[g.source_file_id] = [...(gcodesBySource[g.source_file_id] ?? []), g];
     } else {
-      gcodeNoPrinter.push(f);
+      unlinkedGcodes.push(g);
     }
   }
 
@@ -235,30 +264,24 @@ export function ModelDetail() {
               </button>
             </div>
 
-            {model.files.filter((f) => f.file_type !== "GCODE").length > 0 && (
-              <div className="mb-3">
-                {model.files
-                  .filter((f) => f.file_type !== "GCODE")
-                  .map((f) => (
-                    <FileRow key={f.id} file={f} printers={printers} onDelete={deleteFile} onPrinterChange={changePrinter} />
-                  ))}
-              </div>
-            )}
-
-            {/* GCODE section */}
-            {(model.files.some((f) => f.file_type === "GCODE")) && (
-              <div>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">GCODE</h3>
-                {Object.entries(gcodeByPrinter).map(([printerName, files]) => (
-                  <div key={printerName} className="mb-2">
-                    <p className="text-xs text-green-400 font-medium mb-1">{printerName}</p>
-                    {files.map((f) => (
-                      <FileRow key={f.id} file={f} printers={printers} onDelete={deleteFile} onPrinterChange={changePrinter} />
-                    ))}
+            {sourceFiles.map((f) => (
+              <div key={f.id}>
+                <FileRow file={f} printers={printers} allFiles={sourceFiles} onDelete={deleteFile} onPrinterChange={changePrinter} onSourceChange={changeSource} />
+                {gcodesBySource[f.id]?.map((g) => (
+                  <div key={g.id} className="ml-4 border-l-2 border-gray-800 pl-2">
+                    <FileRow file={g} printers={printers} allFiles={sourceFiles} onDelete={deleteFile} onPrinterChange={changePrinter} onSourceChange={changeSource} />
                   </div>
                 ))}
-                {gcodeNoPrinter.map((f) => (
-                  <FileRow key={f.id} file={f} printers={printers} onDelete={deleteFile} onPrinterChange={changePrinter} />
+              </div>
+            ))}
+
+            {unlinkedGcodes.length > 0 && (
+              <div className={sourceFiles.length > 0 ? "mt-3 pt-3 border-t border-gray-800" : ""}>
+                {sourceFiles.length > 0 && (
+                  <p className="text-xs text-gray-600 mb-1">Unlinked GCODE</p>
+                )}
+                {unlinkedGcodes.map((f) => (
+                  <FileRow key={f.id} file={f} printers={printers} allFiles={sourceFiles} onDelete={deleteFile} onPrinterChange={changePrinter} onSourceChange={changeSource} />
                 ))}
               </div>
             )}
@@ -290,6 +313,7 @@ export function ModelDetail() {
       {showAddFiles && (
         <AddFilesModal
           modelId={modelId}
+          existingFiles={model.files}
           onClose={() => setShowAddFiles(false)}
           onSuccess={() => {
             setShowAddFiles(false);

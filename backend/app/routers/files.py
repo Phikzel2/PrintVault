@@ -41,6 +41,7 @@ async def upload_file(
     model_id: int,
     file: UploadFile = File(...),
     printer_id: Optional[int] = Form(None),
+    source_file_id: Optional[int] = Form(None),
     db: Session = Depends(get_db),
 ):
     model = db.query(models.PrintModel).filter(models.PrintModel.id == model_id).first()
@@ -102,6 +103,7 @@ async def upload_file(
             file_path=str(file_path),
             file_size=file_size,
             printer_id=printer_id if file_type == "GCODE" else None,
+            source_file_id=source_file_id if file_type == "GCODE" else None,
         )
         db.add(db_file)
         db.commit()
@@ -152,11 +154,28 @@ def delete_file(file_id: int, db: Session = Depends(get_db)):
 
 
 @router.patch("/files/{file_id}/printer", response_model=schemas.ModelFile)
-def assign_printer(file_id: int, printer_id: Optional[int], db: Session = Depends(get_db)):
+def assign_printer(file_id: int, printer_id: Optional[int] = None, db: Session = Depends(get_db)):
     db_file = db.query(models.ModelFile).filter(models.ModelFile.id == file_id).first()
     if not db_file:
         raise HTTPException(status_code=404, detail="File not found")
     db_file.printer_id = printer_id
+    db.commit()
+    db.refresh(db_file)
+    return db_file
+
+
+@router.patch("/files/{file_id}/source", response_model=schemas.ModelFile)
+def assign_source_file(file_id: int, source_file_id: Optional[int] = None, db: Session = Depends(get_db)):
+    db_file = db.query(models.ModelFile).filter(models.ModelFile.id == file_id).first()
+    if not db_file:
+        raise HTTPException(status_code=404, detail="File not found")
+    if source_file_id is not None:
+        source = db.query(models.ModelFile).filter(models.ModelFile.id == source_file_id).first()
+        if not source:
+            raise HTTPException(status_code=404, detail="Source file not found")
+        if source.model_id != db_file.model_id:
+            raise HTTPException(status_code=400, detail="Source file must belong to the same model")
+    db_file.source_file_id = source_file_id
     db.commit()
     db.refresh(db_file)
     return db_file

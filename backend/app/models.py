@@ -41,6 +41,7 @@ class ModelFile(Base):
     file_path = Column(String(500), nullable=False)
     file_size = Column(BigInteger)
     printer_id = Column(Integer, ForeignKey("printers.id", ondelete="SET NULL"), nullable=True)
+    source_file_id = Column(Integer, ForeignKey("model_files.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     model = relationship("PrintModel", back_populates="files")

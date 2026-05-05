@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from .config import settings
 from .database import Base, engine
@@ -16,8 +17,24 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    _migrate(engine)
     _check_upload_dir()
     yield
+
+
+def _migrate(engine):
+    """Apply additive schema changes that create_all won't handle."""
+    with engine.connect() as conn:
+        # v2: GCODE → source file linking
+        try:
+            conn.execute(text(
+                "ALTER TABLE model_files ADD COLUMN source_file_id INTEGER "
+                "REFERENCES model_files(id) ON DELETE SET NULL"
+            ))
+            conn.commit()
+            logger.info("Migration: added model_files.source_file_id")
+        except Exception:
+            pass  # column already exists
 
 
 def _check_upload_dir():

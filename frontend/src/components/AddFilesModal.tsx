@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { modelsApi, printersApi } from "../api/client";
+import { modelsApi, printersApi, filesApi } from "../api/client";
 import { parseUploadError } from "../api/errors";
-import type { Printer } from "../types";
+import type { ModelFile, Printer } from "../types";
 
 interface AddFilesModalProps {
   modelId: number;
+  existingFiles: ModelFile[];
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -28,31 +29,45 @@ function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-interface PendingFile { file: File; printerId: number | null }
+interface PendingFile {
+  file: File;
+  printerId: number | null;
+  sourceFileId: number | null; // existing model file ID
+}
 
-export function AddFilesModal({ modelId, onClose, onSuccess }: AddFilesModalProps) {
+const SOURCE_TYPES = ["STL", "3MF", "OBJ"];
+
+export function AddFilesModal({ modelId, existingFiles, onClose, onSuccess }: AddFilesModalProps) {
   const [pending, setPending] = useState<PendingFile[]>([]);
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const sourceOptions = existingFiles.filter((f) => SOURCE_TYPES.includes(f.file_type));
 
   useEffect(() => {
     printersApi.list().then((r) => setPrinters(r.data)).catch(() => {});
   }, []);
 
   const onDrop = useCallback((accepted: File[]) => {
-    setPending((prev) => [...prev, ...accepted.map((f) => ({ file: f, printerId: null }))]);
+    setPending((prev) => [...prev, ...accepted.map((f) => ({ file: f, printerId: null, sourceFileId: null }))]);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: ACCEPTED_TYPES, multiple: true });
+
+  const update = (idx: number, patch: Partial<PendingFile>) =>
+    setPending((prev) => prev.map((f, i) => (i === idx ? { ...f, ...patch } : f)));
 
   const upload = async () => {
     if (pending.length === 0) return onSuccess();
     setUploading(true);
     setError(null);
     try {
-      for (const { file, printerId } of pending) {
-        await modelsApi.uploadFile(modelId, file, printerId ?? undefined);
+      for (const { file, printerId, sourceFileId } of pending) {
+        const { data: uploaded } = await modelsApi.uploadFile(modelId, file, printerId ?? undefined);
+        if (getFileTypeLabel(file.name) === "GCODE" && sourceFileId != null) {
+          await filesApi.assignSource(uploaded.id, sourceFileId);
+        }
       }
       onSuccess();
     } catch (e) {
@@ -84,28 +99,46 @@ export function AddFilesModal({ modelId, onClose, onSuccess }: AddFilesModalProp
             <p className="text-gray-600 text-xs mt-1">STL, 3MF, GCODE, OBJ, STEP, AMF</p>
           </div>
 
-          {pending.map(({ file, printerId }, idx) => {
+          {pending.map(({ file, printerId, sourceFileId }, idx) => {
             const type = getFileTypeLabel(file.name);
             return (
-              <div key={idx} className="flex items-center gap-3 bg-gray-800 rounded-lg px-3 py-2">
-                <span className="text-xs font-mono bg-gray-700 px-2 py-0.5 rounded text-gray-300 shrink-0">{type}</span>
-                <span className="text-sm text-gray-300 flex-1 truncate">{file.name}</span>
-                <span className="text-xs text-gray-600 shrink-0">{formatBytes(file.size)}</span>
-                {type === "GCODE" && printers.length > 0 && (
-                  <select
-                    value={printerId ?? ""}
-                    onChange={(e) => setPending((prev) => prev.map((f, i) => i === idx ? { ...f, printerId: e.target.value ? Number(e.target.value) : null } : f))}
-                    className="text-xs bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-300 shrink-0"
-                  >
-                    <option value="">No printer</option>
-                    {printers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
+              <div key={idx} className="flex flex-col bg-gray-800 rounded-lg px-3 py-2 gap-1.5">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-mono bg-gray-700 px-2 py-0.5 rounded text-gray-300 shrink-0">{type}</span>
+                  <span className="text-sm text-gray-300 flex-1 truncate">{file.name}</span>
+                  <span className="text-xs text-gray-600 shrink-0">{formatBytes(file.size)}</span>
+                  <button onClick={() => setPending((prev) => prev.filter((_, i) => i !== idx))} className="btn-ghost p-1 rounded shrink-0">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                {type === "GCODE" && (
+                  <div className="flex gap-2 pl-1">
+                    {sourceOptions.length > 0 && (
+                      <select
+                        value={sourceFileId ?? ""}
+                        onChange={(e) => update(idx, { sourceFileId: e.target.value ? Number(e.target.value) : null })}
+                        className="text-xs bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-300 flex-1"
+                      >
+                        <option value="">Sliced from… (optional)</option>
+                        {sourceOptions.map((f) => (
+                          <option key={f.id} value={f.id}>{f.original_filename}</option>
+                        ))}
+                      </select>
+                    )}
+                    {printers.length > 0 && (
+                      <select
+                        value={printerId ?? ""}
+                        onChange={(e) => update(idx, { printerId: e.target.value ? Number(e.target.value) : null })}
+                        className="text-xs bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-300 flex-1"
+                      >
+                        <option value="">No printer</option>
+                        {printers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                    )}
+                  </div>
                 )}
-                <button onClick={() => setPending((prev) => prev.filter((_, i) => i !== idx))} className="btn-ghost p-1 rounded shrink-0">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
               </div>
             );
           })}

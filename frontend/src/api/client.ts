@@ -22,10 +22,11 @@ export const modelsApi = {
 
   delete: (id: number) => api.delete(`/models/${id}`),
 
-  uploadFile: (modelId: number, file: File, printerId?: number) => {
+  uploadFile: (modelId: number, file: File, printerId?: number, sourceFileId?: number) => {
     const form = new FormData();
     form.append("file", file);
     if (printerId != null) form.append("printer_id", String(printerId));
+    if (sourceFileId != null) form.append("source_file_id", String(sourceFileId));
     return api.post(`/models/${modelId}/files`, form, {
       headers: { "Content-Type": "multipart/form-data" },
     });
@@ -50,4 +51,6 @@ export const filesApi = {
   delete: (id: number) => api.delete(`/files/${id}`),
   assignPrinter: (fileId: number, printerId: number | null) =>
     api.patch(`/files/${fileId}/printer`, null, { params: { printer_id: printerId } }),
+  assignSource: (fileId: number, sourceFileId: number | null) =>
+    api.patch(`/files/${fileId}/source`, null, { params: { source_file_id: sourceFileId } }),
 };
