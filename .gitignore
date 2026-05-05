@@ -4,7 +4,6 @@ __pycache__/
 *.pyc
 .DS_Store
 dist/
-data/postgres/*
-!data/postgres/.gitkeep
+data/postgres/
 data/uploads/*
 !data/uploads/.gitkeep
