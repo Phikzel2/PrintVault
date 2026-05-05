@@ -1,7 +1,10 @@
 import axios from "axios";
 import type { PaginatedModels, PrintModel, PrintModelSummary, Printer, Tag } from "../types";
 
-const api = axios.create({ baseURL: "/api" });
+const api = axios.create({
+  baseURL: "/api",
+  paramsSerializer: { indexes: null }, // serialize arrays as tag=a&tag=b, not tag[]=a
+});
 
 export const modelsApi = {
   list: (params?: {
