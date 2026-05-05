@@ -104,7 +104,7 @@ Click **Import URL** in the header and paste any public model URL:
 
 PrintVault fetches the model metadata and shows a preview with name, description, license, tags, and a selectable file list. Choose which files to download and click **Import** — the model is created and files are downloaded server-side. Thumbnails are generated automatically.
 
-**Printables** works out of the box (no token needed).
+**Printables** works out of the box — no token needed.
 
 **Thingiverse** requires a free API token — register an app at [thingiverse.com/developers](https://www.thingiverse.com/developers) and add `THINGIVERSE_TOKEN=your_token` to `.env`.
 

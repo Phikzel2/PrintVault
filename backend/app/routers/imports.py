@@ -109,108 +109,77 @@ async def _fetch_thingiverse(thing_id: str) -> ImportPreview:
     )
 
 
-_PRINTABLES_CDN = "https://media.printables.com"
-_UUID_RE = re.compile(r"media/prints/([0-9a-f-]{36})/", re.IGNORECASE)
+_DOWNLOAD_MUTATION = """
+mutation GetDownloadLink($id: ID!, $modelId: ID!, $fileType: DownloadFileTypeEnum!, $source: DownloadSourceEnum!) {
+  getDownloadLink(id: $id, printId: $modelId, fileType: $fileType, source: $source) {
+    ok
+    output { link }
+  }
+}
+"""
+
+_DETAIL_QUERY = """
+query PrintDetail($id: ID!) {
+  print(id: $id) {
+    id name description summary
+    license { name }
+    tags { name }
+    stls { id name fileSize }
+    gcodes { id name fileSize }
+    slas { id name fileSize }
+  }
+}
+"""
+
+_GQL = "https://api.printables.com/graphql/"
+_GQL_HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
+
+
+async def _printables_download_url(client: httpx.AsyncClient, file_id: str, model_id: str, file_type: str) -> str | None:
+    r = await client.post(_GQL, json={
+        "query": _DOWNLOAD_MUTATION,
+        "variables": {"id": file_id, "modelId": model_id, "fileType": file_type, "source": "model_detail"},
+    }, headers=_GQL_HEADERS)
+    if not r.is_success:
+        return None
+    result = (r.json().get("data") or {}).get("getDownloadLink") or {}
+    return (result.get("output") or {}).get("link")
 
 
 async def _fetch_printables(model_id: str) -> ImportPreview:
-    query = """
-    query PrintDetail($id: ID!) {
-      print(id: $id) {
-        id
-        name
-        description
-        summary
-        license { name }
-        tags { name }
-        stls { id name fileSize filePreviewPath folder }
-        gcodes { id name fileSize folder }
-        slas { id name fileSize filePreviewPath folder }
-      }
-    }
-    """
-    _GQL = "https://api.printables.com/graphql/"
-    _HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
-
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        # Introspect schema once to find download-related operations
-        ri = await client.post(_GQL, json={"query": """
-        { __schema {
-            queryType { fields { name } }
-            mutationType { fields { name } }
-        } }
-        """}, headers=_HEADERS)
-        if ri.is_success:
-            sd = ri.json().get("data", {}).get("__schema", {})
-            qs = [f["name"] for f in (sd.get("queryType") or {}).get("fields", [])]
-            ms = [f["name"] for f in (sd.get("mutationType") or {}).get("fields", [])]
-            logger.info("Printables queries with file/download: %s",
-                        [n for n in qs if any(k in n.lower() for k in ("file", "download", "stl"))])
-            logger.info("Printables mutations with file/download: %s",
-                        [n for n in ms if any(k in n.lower() for k in ("file", "download", "stl"))])
-
+    async with httpx.AsyncClient(timeout=20.0) as client:
         r = await client.post(
             _GQL,
-            json={"query": query, "variables": {"id": model_id}},
-            headers=_HEADERS,
+            json={"query": _DETAIL_QUERY, "variables": {"id": model_id}},
+            headers=_GQL_HEADERS,
         )
         if not r.is_success:
             logger.error("Printables API %s: %s", r.status_code, r.text[:500])
             raise HTTPException(502, f"Printables API error ({r.status_code}): {r.text[:200]}")
 
-    body = r.json()
-    if errors := body.get("errors"):
-        raise HTTPException(400, errors[0].get("message", "Printables API error"))
+        body = r.json()
+        if errors := body.get("errors"):
+            raise HTTPException(400, errors[0].get("message", "Printables API error"))
 
-    p = (body.get("data") or {}).get("print")
-    if not p:
-        raise HTTPException(404, "Printables model not found or is private")
+        p = (body.get("data") or {}).get("print")
+        if not p:
+            raise HTTPException(404, "Printables model not found or is private")
 
-    # Log raw file data so we can inspect the actual CDN structure
-    for f in (p.get("stls") or [])[:2]:
-        logger.info("STL raw: %s", f)
-    for f in (p.get("gcodes") or [])[:2]:
-        logger.info("GCODE raw: %s", f)
-
-    # Printables CDN path structure:
-    #   previews/{file_uuid}.png   ← what filePreviewPath contains
-    #   stls/{file_uuid}.{ext}     ← actual source file (same UUID, different ext)
-    # Extract model UUID and per-file UUID from each file's filePreviewPath.
-    _FILE_UUID_RE = re.compile(r"media/prints/([0-9a-f-]{36})/previews/([0-9a-f-]{36})", re.IGNORECASE)
-
-    def _stl_url(preview_path: str, filename: str) -> str | None:
-        m = _FILE_UUID_RE.search(preview_path or "")
-        if not m:
-            return None
-        model_uuid, file_uuid = m.group(1), m.group(2)
-        ext = Path(filename).suffix.lower()
-        return f"{_PRINTABLES_CDN}/media/prints/{model_uuid}/stls/{file_uuid}{ext}"
-
-    # Extract model UUID for GCODE files (no preview path available)
-    model_uuid: str | None = None
-    for f in (p.get("stls") or []) + (p.get("slas") or []):
-        if m := _UUID_RE.search(f.get("filePreviewPath") or ""):
-            model_uuid = m.group(1)
-            break
-
-    files: list[ImportFile] = []
-    for f in (p.get("stls") or []):
-        url = _stl_url(f.get("filePreviewPath"), f["name"])
-        if url:
-            files.append(ImportFile(name=f["name"], download_url=url, size=f.get("fileSize"), file_type="STL"))
-        else:
-            logger.warning("No filePreviewPath for STL %s — skipping", f["name"])
-    for f in (p.get("gcodes") or []):
-        if model_uuid:
-            # GCODEs have no preview; use model UUID + integer ID as best guess
-            url = f"{_PRINTABLES_CDN}/media/prints/{model_uuid}/gcodes/{f['id']}/{f['name']}"
-            files.append(ImportFile(name=f["name"], download_url=url, size=f.get("fileSize"), file_type="GCODE"))
-    for f in (p.get("slas") or []):
-        url = _stl_url(f.get("filePreviewPath"), f["name"])
-        if url:
-            files.append(ImportFile(name=f["name"], download_url=url, size=f.get("fileSize"), file_type="STL"))
-        else:
-            logger.warning("No filePreviewPath for SLA %s — skipping", f["name"])
+        files: list[ImportFile] = []
+        for f in (p.get("stls") or []):
+            url = await _printables_download_url(client, f["id"], model_id, "stl")
+            if url:
+                files.append(ImportFile(name=f["name"], download_url=url, size=f.get("fileSize"), file_type="STL"))
+            else:
+                logger.warning("No download link for STL %s", f["name"])
+        for f in (p.get("gcodes") or []):
+            url = await _printables_download_url(client, f["id"], model_id, "gcode")
+            if url:
+                files.append(ImportFile(name=f["name"], download_url=url, size=f.get("fileSize"), file_type="GCODE"))
+        for f in (p.get("slas") or []):
+            url = await _printables_download_url(client, f["id"], model_id, "sla")
+            if url:
+                files.append(ImportFile(name=f["name"], download_url=url, size=f.get("fileSize"), file_type="STL"))
 
     license_name = (p.get("license") or {}).get("name")
     description = p.get("description") or p.get("summary")
