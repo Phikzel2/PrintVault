@@ -25,6 +25,7 @@ services:
       SECRET_KEY: ${SECRET_KEY:-changeme-in-production}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-["http://localhost:3120"]}
     volumes:
       - ./data/uploads:/data/uploads
     depends_on:

@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     admin_username: str = "admin"
     admin_password: str = "changeme"
     jwt_expire_hours: int = 168  # 7 days
+    allowed_origins: list[str] = ["*"]
 
     class Config:
         env_file = ".env"

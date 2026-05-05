@@ -24,7 +24,6 @@ export interface ModelFile {
   filename: string;
   original_filename: string;
   file_type: FileType;
-  file_path: string;
   file_size: number | null;
   printer_id: number | null;
   printer: Printer | null;

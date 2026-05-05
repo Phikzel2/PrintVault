@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text
 
 from .config import settings
 from .database import Base, engine
@@ -17,50 +16,9 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
-    _migrate(engine)
     _seed_admin()
     _check_upload_dir()
     yield
-
-
-def _migrate(engine):
-    """Apply additive schema changes that create_all won't handle."""
-    # Each step uses its own connection so a failed ALTER (column already exists)
-    # doesn't leave the connection in an aborted-transaction state for the next step.
-    steps = [
-        (
-            "model_files.source_file_id",
-            "ALTER TABLE model_files ADD COLUMN source_file_id INTEGER "
-            "REFERENCES model_files(id) ON DELETE SET NULL",
-            None,
-        ),
-        (
-            "print_models.owner_id",
-            "ALTER TABLE print_models ADD COLUMN owner_id INTEGER "
-            "REFERENCES users(id) ON DELETE SET NULL",
-            None,
-        ),
-        (
-            "print_models.is_public",
-            "ALTER TABLE print_models ADD COLUMN is_public BOOLEAN NOT NULL DEFAULT FALSE",
-            "UPDATE print_models SET is_public = TRUE WHERE owner_id IS NULL",
-        ),
-        (
-            "printers.moonraker_url",
-            "ALTER TABLE printers ADD COLUMN moonraker_url VARCHAR(500)",
-            None,
-        ),
-    ]
-    for name, ddl, extra_dml in steps:
-        with engine.connect() as conn:
-            try:
-                conn.execute(text(ddl))
-                if extra_dml:
-                    conn.execute(text(extra_dml))
-                conn.commit()
-                logger.info("Migration: added %s", name)
-            except Exception:
-                conn.rollback()
 
 
 def _seed_admin():
@@ -77,23 +35,8 @@ def _seed_admin():
                 is_admin=True,
             )
             db.add(admin)
-            db.flush()
-            # Assign orphaned models to admin
-            db.query(db_models.PrintModel).filter(
-                db_models.PrintModel.owner_id == None  # noqa: E711
-            ).update({"owner_id": admin.id})
             db.commit()
             logger.info("Created admin user: %s", settings.admin_username)
-        else:
-            # Assign any remaining orphaned models to first admin
-            admin = db.query(db_models.User).filter(db_models.User.is_admin == True).first()  # noqa: E712
-            if admin:
-                count = db.query(db_models.PrintModel).filter(
-                    db_models.PrintModel.owner_id == None  # noqa: E711
-                ).update({"owner_id": admin.id})
-                if count:
-                    db.commit()
-                    logger.info("Assigned %d orphaned models to admin %s", count, admin.username)
     finally:
         db.close()
 
@@ -117,7 +60,7 @@ app = FastAPI(title="PrintVault", version="2.0.0", lifespan=lifespan, redirect_s
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )

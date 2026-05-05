@@ -81,7 +81,6 @@ class ModelFile(ModelFileBase):
     id: int
     model_id: int
     filename: str
-    file_path: str
     created_at: datetime
     printer: Optional[Printer] = None
 
