@@ -15,6 +15,12 @@ from ..database import get_db
 router = APIRouter(prefix="/models", tags=["models"])
 
 
+def prune_orphan_tags(db: Session) -> None:
+    orphans = db.query(models.Tag).filter(~models.Tag.models.any()).all()
+    for tag in orphans:
+        db.delete(tag)
+
+
 def get_or_create_tags(db: Session, tag_names: list[str]) -> list[models.Tag]:
     tags = []
     for name in tag_names:
@@ -191,6 +197,7 @@ def update_model(
         model.license = data.license
     if data.tags is not None:
         model.tags = get_or_create_tags(db, data.tags)
+        prune_orphan_tags(db)
 
     db.commit()
     db.refresh(model)
@@ -215,6 +222,7 @@ def delete_model(
         shutil.rmtree(model_dir)
 
     db.delete(model)
+    prune_orphan_tags(db)
     db.commit()
 
 
