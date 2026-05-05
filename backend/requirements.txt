@@ -10,5 +10,6 @@ pydantic-settings==2.2.1
 aiofiles==23.2.1
 trimesh==4.3.2
 networkx
+lxml
 matplotlib==3.9.0
 numpy==1.26.4
