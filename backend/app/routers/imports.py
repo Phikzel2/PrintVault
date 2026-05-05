@@ -109,35 +109,54 @@ async def _fetch_thingiverse(thing_id: str) -> ImportPreview:
     )
 
 
-_PRINTABLES_FILE_URL_FIELD: str | None = None
+_PRINTABLES_CDN = "https://media.printables.com"
+
+# Known fields per type from introspection:
+# STLType/SLAType: filePreviewPath (CDN-relative path to the actual model file)
+# GCodeType: unknown — introspected separately
+_PRINTABLES_GCODE_FIELD: str | None = None
 
 
-async def _printables_url_field(client: httpx.AsyncClient) -> str:
-    """Introspect STLType once to find the correct download URL field name."""
-    global _PRINTABLES_FILE_URL_FIELD
-    if _PRINTABLES_FILE_URL_FIELD:
-        return _PRINTABLES_FILE_URL_FIELD
+async def _introspect_fields(client: httpx.AsyncClient, type_name: str) -> set[str]:
     r = await client.post(
         "https://api.printables.com/graphql/",
-        json={"query": '{ __type(name: "STLType") { fields { name } } }'},
+        json={"query": f'{{ __type(name: "{type_name}") {{ fields {{ name }} }} }}'},
         headers={"Content-Type": "application/json", "Accept": "application/json"},
     )
     if r.is_success:
         fields = {f["name"] for f in (r.json().get("data", {}).get("__type") or {}).get("fields", [])}
-        logger.info("Printables STLType fields: %s", fields)
-        for candidate in ("fileDownloadUrl", "downloadUrl", "url", "filePath", "path", "fileUrl"):
-            if candidate in fields:
-                _PRINTABLES_FILE_URL_FIELD = candidate
-                logger.info("Using Printables file URL field: %s", candidate)
-                return candidate
-    _PRINTABLES_FILE_URL_FIELD = "fileDownloadUrl"
-    logger.warning("Could not introspect STLType — falling back to fileDownloadUrl")
-    return _PRINTABLES_FILE_URL_FIELD
+        logger.info("Printables %s fields: %s", type_name, fields)
+        return fields
+    return set()
+
+
+def _pick_url_field(fields: set[str]) -> str | None:
+    for candidate in ("fileDownloadUrl", "downloadUrl", "fileUrl", "url", "filePath", "path", "filePreviewPath"):
+        if candidate in fields:
+            return candidate
+    return None
+
+
+def _make_url(raw: str) -> str:
+    return raw if raw.startswith("http") else f"{_PRINTABLES_CDN}{raw}"
 
 
 async def _fetch_printables(model_id: str) -> ImportPreview:
+    global _PRINTABLES_GCODE_FIELD
+
     async with httpx.AsyncClient(timeout=15.0) as client:
-        url_field = await _printables_url_field(client)
+        stl_fields = await _introspect_fields(client, "STLType")
+        stl_url_field = _pick_url_field(stl_fields) or "filePreviewPath"
+
+        if _PRINTABLES_GCODE_FIELD is None:
+            gcode_fields = await _introspect_fields(client, "GCodeType")
+            _PRINTABLES_GCODE_FIELD = _pick_url_field(gcode_fields) or ""
+
+        gcode_url_field = _PRINTABLES_GCODE_FIELD
+
+        stl_file_fields = f"name fileSize {stl_url_field}"
+        gcode_file_fields = f"name fileSize {gcode_url_field}" if gcode_url_field else "name fileSize"
+
         query = f"""
         query PrintDetail($id: ID!) {{
           print(id: $id) {{
@@ -147,9 +166,9 @@ async def _fetch_printables(model_id: str) -> ImportPreview:
             summary
             license {{ name }}
             tags {{ name }}
-            stls {{ name fileSize {url_field} }}
-            gcodes {{ name fileSize {url_field} }}
-            slas {{ name fileSize {url_field} }}
+            stls {{ {stl_file_fields} }}
+            gcodes {{ {gcode_file_fields} }}
+            slas {{ {stl_file_fields} }}
           }}
         }}
         """
@@ -172,14 +191,17 @@ async def _fetch_printables(model_id: str) -> ImportPreview:
 
     files: list[ImportFile] = []
     for f in (p.get("stls") or []):
-        if f.get(url_field):
-            files.append(ImportFile(name=f["name"], download_url=f[url_field], size=f.get("fileSize"), file_type="STL"))
+        raw = f.get(stl_url_field)
+        if raw:
+            files.append(ImportFile(name=f["name"], download_url=_make_url(raw), size=f.get("fileSize"), file_type="STL"))
     for f in (p.get("gcodes") or []):
-        if f.get(url_field):
-            files.append(ImportFile(name=f["name"], download_url=f[url_field], size=f.get("fileSize"), file_type="GCODE"))
+        raw = f.get(gcode_url_field) if gcode_url_field else None
+        if raw:
+            files.append(ImportFile(name=f["name"], download_url=_make_url(raw), size=f.get("fileSize"), file_type="GCODE"))
     for f in (p.get("slas") or []):
-        if f.get(url_field):
-            files.append(ImportFile(name=f["name"], download_url=f[url_field], size=f.get("fileSize"), file_type="STL"))
+        raw = f.get(stl_url_field)
+        if raw:
+            files.append(ImportFile(name=f["name"], download_url=_make_url(raw), size=f.get("fileSize"), file_type="STL"))
 
     license_name = (p.get("license") or {}).get("name")
     description = p.get("description") or p.get("summary")
