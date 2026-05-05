@@ -66,7 +66,7 @@ export function ModelCard({ model }: ModelCardProps) {
         )}
 
         <p className="text-xs text-gray-600 mt-auto">
-          {new Date(model.created_at).toLocaleDateString()}
+          {new Date(model.created_at).toLocaleDateString("en-GB")}
         </p>
       </div>
     </Link>

@@ -151,7 +151,7 @@ export function ModelDetail() {
                     </a>
                   )}
                   {model.license && <span>License: {model.license}</span>}
-                  <span>Added {new Date(model.created_at).toLocaleDateString()}</span>
+                  <span>Added {new Date(model.created_at).toLocaleDateString("en-GB")}</span>
                 </div>
               </>
             )}
