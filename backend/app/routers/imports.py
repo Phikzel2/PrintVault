@@ -129,11 +129,30 @@ async def _fetch_printables(model_id: str) -> ImportPreview:
       }
     }
     """
+    _GQL = "https://api.printables.com/graphql/"
+    _HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
+
     async with httpx.AsyncClient(timeout=15.0) as client:
+        # Introspect schema once to find download-related operations
+        ri = await client.post(_GQL, json={"query": """
+        { __schema {
+            queryType { fields { name } }
+            mutationType { fields { name } }
+        } }
+        """}, headers=_HEADERS)
+        if ri.is_success:
+            sd = ri.json().get("data", {}).get("__schema", {})
+            qs = [f["name"] for f in (sd.get("queryType") or {}).get("fields", [])]
+            ms = [f["name"] for f in (sd.get("mutationType") or {}).get("fields", [])]
+            logger.info("Printables queries with file/download: %s",
+                        [n for n in qs if any(k in n.lower() for k in ("file", "download", "stl"))])
+            logger.info("Printables mutations with file/download: %s",
+                        [n for n in ms if any(k in n.lower() for k in ("file", "download", "stl"))])
+
         r = await client.post(
-            "https://api.printables.com/graphql/",
+            _GQL,
             json={"query": query, "variables": {"id": model_id}},
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            headers=_HEADERS,
         )
         if not r.is_success:
             logger.error("Printables API %s: %s", r.status_code, r.text[:500])
