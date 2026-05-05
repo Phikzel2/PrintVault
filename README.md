@@ -1,6 +1,6 @@
 # PrintVault
 
-A self-hosted 3D print file library — your personal alternative to Printables, MakerWorld, and Thingiverse. Organize STL, 3MF, GCODE, OBJ, STEP, and AMF files with a searchable web UI, in-browser 3D viewer, per-printer GCODE management, and direct push to Klipper/Moonraker printers.
+A self-hosted 3D print file library — your personal alternative to Printables, MakerWorld, and Thingiverse. Organize STL, 3MF, GCODE, OBJ, STEP, and AMF files with a searchable web UI, in-browser 3D viewer, per-printer GCODE management, direct push to Klipper/Moonraker printers, and one-click import from Printables and Thingiverse.
 
 ## Features
 
@@ -13,6 +13,7 @@ A self-hosted 3D print file library — your personal alternative to Printables,
 - **Printer profiles** — define printers (brand, build volume, Moonraker URL) and link GCODE files
 - **Tags & search** — tag models and filter by tag, file type, visibility, or keyword
 - **Source tracking** — store the original URL and license for each model
+- **Import from URL** — paste a Printables or Thingiverse model URL to preview and import files directly into your library
 - **Settings** — per-user date format preference; admins manage users from the UI
 
 ## Stack
@@ -69,7 +70,11 @@ ADMIN_PASSWORD=change-me-strong-password
 # CORS — set to your actual frontend URL in production
 ALLOWED_ORIGINS=["https://your-domain.com"]
 
-# Optional
+# Import integrations (optional)
+# THINGIVERSE_TOKEN=your_app_token_here  # from https://www.thingiverse.com/developers
+# Printables import works without a token
+
+# Optional tuning
 # MAX_FILE_SIZE_MB=500
 # JWT_EXPIRE_HOURS=168
 ```
@@ -89,6 +94,19 @@ openssl rand -hex 32
 ### Logging In
 
 Open the UI and log in with your admin credentials. Sessions last 7 days by default (configurable via `JWT_EXPIRE_HOURS`).
+
+### Importing from Printables or Thingiverse
+
+Click **Import URL** in the header and paste any public model URL:
+
+- `https://www.printables.com/model/12345-model-name`
+- `https://www.thingiverse.com/thing:12345`
+
+PrintVault fetches the model metadata and shows a preview with name, description, license, tags, and a selectable file list. Choose which files to download and click **Import** — the model is created and files are downloaded server-side. Thumbnails are generated automatically.
+
+**Printables** works out of the box (no token needed).
+
+**Thingiverse** requires a free API token — register an app at [thingiverse.com/developers](https://www.thingiverse.com/developers) and add `THINGIVERSE_TOKEN=your_token` to `.env`.
 
 ### Adding a Model
 
@@ -247,6 +265,10 @@ DELETE /api/printers/{id}           Delete printer
 
 # Tags
 GET    /api/tags                    List all tags
+
+# Import
+POST   /api/import/preview          Fetch model metadata from a URL (no DB changes)
+POST   /api/import/confirm          Create model and download selected files
 
 # Health
 GET    /api/health                  Liveness + upload dir status
