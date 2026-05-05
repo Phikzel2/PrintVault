@@ -109,26 +109,53 @@ async def _fetch_thingiverse(thing_id: str) -> ImportPreview:
     )
 
 
+_PRINTABLES_FILE_URL_FIELD: str | None = None
+
+
+async def _printables_url_field(client: httpx.AsyncClient) -> str:
+    """Introspect STLType once to find the correct download URL field name."""
+    global _PRINTABLES_FILE_URL_FIELD
+    if _PRINTABLES_FILE_URL_FIELD:
+        return _PRINTABLES_FILE_URL_FIELD
+    r = await client.post(
+        "https://api.printables.com/graphql/",
+        json={"query": '{ __type(name: "STLType") { fields { name } } }'},
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+    )
+    if r.is_success:
+        fields = {f["name"] for f in (r.json().get("data", {}).get("__type") or {}).get("fields", [])}
+        logger.info("Printables STLType fields: %s", fields)
+        for candidate in ("fileDownloadUrl", "downloadUrl", "url", "filePath", "path", "fileUrl"):
+            if candidate in fields:
+                _PRINTABLES_FILE_URL_FIELD = candidate
+                logger.info("Using Printables file URL field: %s", candidate)
+                return candidate
+    _PRINTABLES_FILE_URL_FIELD = "fileDownloadUrl"
+    logger.warning("Could not introspect STLType — falling back to fileDownloadUrl")
+    return _PRINTABLES_FILE_URL_FIELD
+
+
 async def _fetch_printables(model_id: str) -> ImportPreview:
-    query = """
-    query PrintDetail($id: Int!) {
-      print(id: $id) {
-        id
-        name
-        description
-        summary
-        license { name }
-        tags { name }
-        stls { name fileSize url }
-        gcodes { name fileSize url }
-        slas { name fileSize url }
-      }
-    }
-    """
     async with httpx.AsyncClient(timeout=15.0) as client:
+        url_field = await _printables_url_field(client)
+        query = f"""
+        query PrintDetail($id: ID!) {{
+          print(id: $id) {{
+            id
+            name
+            description
+            summary
+            license {{ name }}
+            tags {{ name }}
+            stls {{ name fileSize {url_field} }}
+            gcodes {{ name fileSize {url_field} }}
+            slas {{ name fileSize {url_field} }}
+          }}
+        }}
+        """
         r = await client.post(
             "https://api.printables.com/graphql/",
-            json={"query": query, "variables": {"id": int(model_id)}},
+            json={"query": query, "variables": {"id": model_id}},
             headers={"Content-Type": "application/json", "Accept": "application/json"},
         )
         if not r.is_success:
@@ -145,14 +172,14 @@ async def _fetch_printables(model_id: str) -> ImportPreview:
 
     files: list[ImportFile] = []
     for f in (p.get("stls") or []):
-        if f.get("url"):
-            files.append(ImportFile(name=f["name"], download_url=f["url"], size=f.get("fileSize"), file_type="STL"))
+        if f.get(url_field):
+            files.append(ImportFile(name=f["name"], download_url=f[url_field], size=f.get("fileSize"), file_type="STL"))
     for f in (p.get("gcodes") or []):
-        if f.get("url"):
-            files.append(ImportFile(name=f["name"], download_url=f["url"], size=f.get("fileSize"), file_type="GCODE"))
+        if f.get(url_field):
+            files.append(ImportFile(name=f["name"], download_url=f[url_field], size=f.get("fileSize"), file_type="GCODE"))
     for f in (p.get("slas") or []):
-        if f.get("url"):
-            files.append(ImportFile(name=f["name"], download_url=f["url"], size=f.get("fileSize"), file_type="STL"))
+        if f.get(url_field):
+            files.append(ImportFile(name=f["name"], download_url=f[url_field], size=f.get("fileSize"), file_type="STL"))
 
     license_name = (p.get("license") or {}).get("name")
     description = p.get("description") or p.get("summary")
