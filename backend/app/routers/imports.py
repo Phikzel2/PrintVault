@@ -138,7 +138,13 @@ def _pick_url_field(fields: set[str]) -> str | None:
 
 
 def _make_url(raw: str) -> str:
-    return raw if raw.startswith("http") else f"{_PRINTABLES_CDN}{raw}"
+    if raw.startswith("http://") or raw.startswith("https://"):
+        return raw
+    if raw.startswith("//"):
+        return f"https:{raw}"
+    if raw.startswith("/"):
+        return f"{_PRINTABLES_CDN}{raw}"
+    return f"{_PRINTABLES_CDN}/{raw}"
 
 
 async def _fetch_printables(model_id: str) -> ImportPreview:
@@ -285,12 +291,13 @@ async def confirm_import(
             unique_name = f"{uuid.uuid4().hex}{ext}"
             file_path = model_dir / unique_name
 
+            logger.info("Downloading %s from %s", f.name, f.download_url)
             try:
                 r = await client.get(f.download_url)
                 r.raise_for_status()
                 content = r.content
             except Exception as e:
-                logger.warning("Skipping %s — download failed: %s", f.name, e)
+                logger.warning("Skipping %s — download failed: %s | url: %s", f.name, e, f.download_url)
                 continue
 
             if not content or len(content) > max_bytes:
