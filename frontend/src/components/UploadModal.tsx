@@ -48,7 +48,7 @@ interface PendingFile {
 }
 
 export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalProps) {
-  const [step, setStep] = useState<Step>("files");
+  const [step, setStep] = useState<Step>(initialFiles?.length ? "meta" : "files");
   const [name, setName] = useState(() =>
     initialFiles?.length ? fileToModelName(initialFiles[0].name) : "",
   );
