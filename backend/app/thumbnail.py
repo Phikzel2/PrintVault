@@ -21,8 +21,23 @@ def generate_thumbnail(file_path: str, output_path: str) -> bool:
         from mpl_toolkits.mplot3d.art3d import Poly3DCollection
         import numpy as np
 
-        mesh = trimesh.load(file_path, force="mesh")
-        if not hasattr(mesh, "faces") or len(mesh.faces) == 0:
+        loaded = trimesh.load(file_path)
+
+        # 3MF (and some OBJ) files load as a Scene with multiple geometries
+        if isinstance(loaded, trimesh.Scene):
+            geometries = [
+                g for g in loaded.geometry.values()
+                if isinstance(g, trimesh.Trimesh) and len(g.faces) > 0
+            ]
+            if not geometries:
+                return False
+            mesh = trimesh.util.concatenate(geometries) if len(geometries) > 1 else geometries[0]
+        elif isinstance(loaded, trimesh.Trimesh):
+            mesh = loaded
+        else:
+            return False
+
+        if len(mesh.faces) == 0:
             return False
 
         vertices = np.array(mesh.vertices)
