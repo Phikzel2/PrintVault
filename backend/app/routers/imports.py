@@ -123,9 +123,9 @@ async def _fetch_printables(model_id: str) -> ImportPreview:
         summary
         license { name }
         tags { name }
-        stls { id name fileSize filePreviewPath }
-        gcodes { id name fileSize }
-        slas { id name fileSize filePreviewPath }
+        stls { id name fileSize filePreviewPath folder }
+        gcodes { id name fileSize folder }
+        slas { id name fileSize filePreviewPath folder }
       }
     }
     """
@@ -146,6 +146,12 @@ async def _fetch_printables(model_id: str) -> ImportPreview:
     p = (body.get("data") or {}).get("print")
     if not p:
         raise HTTPException(404, "Printables model not found or is private")
+
+    # Log raw file data so we can inspect the actual CDN structure
+    for f in (p.get("stls") or [])[:2]:
+        logger.info("STL raw: %s", f)
+    for f in (p.get("gcodes") or [])[:2]:
+        logger.info("GCODE raw: %s", f)
 
     # Printables CDN path structure:
     #   previews/{file_uuid}.png   ← what filePreviewPath contains
