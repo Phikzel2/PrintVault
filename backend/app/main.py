@@ -8,7 +8,7 @@ from sqlalchemy import text
 
 from .config import settings
 from .database import Base, engine
-from .routers import models, files, printers, tags
+from .routers import models, files, printers, tags, auth, users
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     _migrate(engine)
+    _seed_admin()
     _check_upload_dir()
     yield
 
@@ -34,7 +35,65 @@ def _migrate(engine):
             conn.commit()
             logger.info("Migration: added model_files.source_file_id")
         except Exception:
-            pass  # column already exists
+            pass
+
+        # v3: auth — owner_id and is_public on print_models
+        try:
+            conn.execute(text(
+                "ALTER TABLE print_models ADD COLUMN owner_id INTEGER "
+                "REFERENCES users(id) ON DELETE SET NULL"
+            ))
+            conn.commit()
+            logger.info("Migration: added print_models.owner_id")
+        except Exception:
+            pass
+
+        try:
+            conn.execute(text(
+                "ALTER TABLE print_models ADD COLUMN is_public BOOLEAN NOT NULL DEFAULT FALSE"
+            ))
+            conn.execute(text(
+                "UPDATE print_models SET is_public = TRUE WHERE owner_id IS NULL"
+            ))
+            conn.commit()
+            logger.info("Migration: added print_models.is_public")
+        except Exception:
+            pass
+
+
+def _seed_admin():
+    from .database import SessionLocal
+    from . import models as db_models
+    from .auth import hash_password
+
+    db = SessionLocal()
+    try:
+        if db.query(db_models.User).count() == 0:
+            admin = db_models.User(
+                username=settings.admin_username,
+                hashed_password=hash_password(settings.admin_password),
+                is_admin=True,
+            )
+            db.add(admin)
+            db.flush()
+            # Assign orphaned models to admin
+            db.query(db_models.PrintModel).filter(
+                db_models.PrintModel.owner_id == None  # noqa: E711
+            ).update({"owner_id": admin.id})
+            db.commit()
+            logger.info("Created admin user: %s", settings.admin_username)
+        else:
+            # Assign any remaining orphaned models to first admin
+            admin = db.query(db_models.User).filter(db_models.User.is_admin == True).first()  # noqa: E712
+            if admin:
+                count = db.query(db_models.PrintModel).filter(
+                    db_models.PrintModel.owner_id == None  # noqa: E711
+                ).update({"owner_id": admin.id})
+                if count:
+                    db.commit()
+                    logger.info("Assigned %d orphaned models to admin %s", count, admin.username)
+    finally:
+        db.close()
 
 
 def _check_upload_dir():
@@ -52,7 +111,7 @@ def _check_upload_dir():
         logger.error("UPLOAD DIR ERROR: %s exists but is NOT writable. Fix volume permissions.", path)
 
 
-app = FastAPI(title="PrintVault", version="1.0.0", lifespan=lifespan, redirect_slashes=False)
+app = FastAPI(title="PrintVault", version="2.0.0", lifespan=lifespan, redirect_slashes=False)
 
 app.add_middleware(
     CORSMiddleware,
@@ -61,6 +120,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router, prefix="/api")
+app.include_router(users.router, prefix="/api")
 app.include_router(models.router, prefix="/api")
 app.include_router(files.router, prefix="/api")
 app.include_router(printers.router, prefix="/api")

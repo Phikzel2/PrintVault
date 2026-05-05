@@ -8,6 +8,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
 
 from .. import models, schemas
+from ..auth import get_current_user
 from ..config import settings
 from ..database import get_db
 
@@ -41,6 +42,8 @@ def build_summary(model: models.PrintModel) -> schemas.PrintModelSummary:
         source_url=model.source_url,
         license=model.license,
         thumbnail_path=model.thumbnail_path,
+        is_public=model.is_public,
+        owner_id=model.owner_id,
         created_at=model.created_at,
         tags=model.tags,
         file_count=len(model.files),
@@ -48,6 +51,14 @@ def build_summary(model: models.PrintModel) -> schemas.PrintModelSummary:
         threemf_count=counts["3MF"],
         gcode_count=counts["GCODE"],
     )
+
+
+def can_view(model: models.PrintModel, user: models.User) -> bool:
+    return model.is_public or model.owner_id == user.id or user.is_admin
+
+
+def can_edit(model: models.PrintModel, user: models.User) -> bool:
+    return model.owner_id == user.id or user.is_admin
 
 
 @router.get("", response_model=schemas.PaginatedModels)
@@ -58,11 +69,17 @@ def list_models(
     page: int = Query(1, ge=1),
     page_size: int = Query(24, ge=1, le=100),
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
 ):
     q = (
         db.query(models.PrintModel)
         .options(selectinload(models.PrintModel.files), selectinload(models.PrintModel.tags))
     )
+
+    if not current_user.is_admin:
+        q = q.filter(
+            or_(models.PrintModel.is_public == True, models.PrintModel.owner_id == current_user.id)
+        )
 
     if search:
         q = q.filter(
@@ -97,13 +114,19 @@ def list_models(
 
 
 @router.post("", response_model=schemas.PrintModel, status_code=201)
-def create_model(data: schemas.PrintModelCreate, db: Session = Depends(get_db)):
+def create_model(
+    data: schemas.PrintModelCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     tag_objs = get_or_create_tags(db, data.tags)
     model = models.PrintModel(
         name=data.name,
         description=data.description,
         source_url=data.source_url,
         license=data.license,
+        is_public=False,
+        owner_id=current_user.id,
         tags=tag_objs,
     )
     db.add(model)
@@ -113,7 +136,11 @@ def create_model(data: schemas.PrintModelCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/{model_id}", response_model=schemas.PrintModel)
-def get_model(model_id: int, db: Session = Depends(get_db)):
+def get_model(
+    model_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     model = (
         db.query(models.PrintModel)
         .options(
@@ -125,11 +152,18 @@ def get_model(model_id: int, db: Session = Depends(get_db)):
     )
     if not model:
         raise HTTPException(status_code=404, detail="Model not found")
+    if not can_view(model, current_user):
+        raise HTTPException(status_code=403, detail="Access denied")
     return model
 
 
 @router.put("/{model_id}", response_model=schemas.PrintModel)
-def update_model(model_id: int, data: schemas.PrintModelUpdate, db: Session = Depends(get_db)):
+def update_model(
+    model_id: int,
+    data: schemas.PrintModelUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     model = (
         db.query(models.PrintModel)
         .options(selectinload(models.PrintModel.tags))
@@ -138,6 +172,8 @@ def update_model(model_id: int, data: schemas.PrintModelUpdate, db: Session = De
     )
     if not model:
         raise HTTPException(status_code=404, detail="Model not found")
+    if not can_edit(model, current_user):
+        raise HTTPException(status_code=403, detail="Access denied")
 
     if data.name is not None:
         model.name = data.name
@@ -156,12 +192,17 @@ def update_model(model_id: int, data: schemas.PrintModelUpdate, db: Session = De
 
 
 @router.delete("/{model_id}", status_code=204)
-def delete_model(model_id: int, db: Session = Depends(get_db)):
+def delete_model(
+    model_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     model = db.query(models.PrintModel).filter(models.PrintModel.id == model_id).first()
     if not model:
         raise HTTPException(status_code=404, detail="Model not found")
+    if not can_edit(model, current_user):
+        raise HTTPException(status_code=403, detail="Access denied")
 
-    # Remove files from disk
     model_dir = Path(settings.upload_dir) / "models" / str(model_id)
     if model_dir.exists():
         import shutil
@@ -171,8 +212,26 @@ def delete_model(model_id: int, db: Session = Depends(get_db)):
     db.commit()
 
 
+@router.post("/{model_id}/visibility", status_code=200)
+def set_visibility(
+    model_id: int,
+    is_public: bool = Query(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    model = db.query(models.PrintModel).filter(models.PrintModel.id == model_id).first()
+    if not model:
+        raise HTTPException(status_code=404, detail="Model not found")
+    if not can_edit(model, current_user):
+        raise HTTPException(status_code=403, detail="Access denied")
+    model.is_public = is_public
+    db.commit()
+    return {"is_public": model.is_public}
+
+
 @router.get("/{model_id}/thumbnail")
 def get_thumbnail(model_id: int, db: Session = Depends(get_db)):
+    # No auth required — thumbnails are served to <img> tags that can't send Bearer tokens
     model = db.query(models.PrintModel).filter(models.PrintModel.id == model_id).first()
     if not model:
         raise HTTPException(status_code=404, detail="Model not found")
@@ -183,13 +242,20 @@ def get_thumbnail(model_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{model_id}/thumbnail", status_code=200)
-def set_thumbnail(model_id: int, file_id: int = Query(...), db: Session = Depends(get_db)):
+def set_thumbnail(
+    model_id: int,
+    file_id: int = Query(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     import time
     from ..thumbnail import generate_thumbnail
 
     model = db.query(models.PrintModel).filter(models.PrintModel.id == model_id).first()
     if not model:
         raise HTTPException(status_code=404, detail="Model not found")
+    if not can_edit(model, current_user):
+        raise HTTPException(status_code=403, detail="Access denied")
 
     db_file = (
         db.query(models.ModelFile)

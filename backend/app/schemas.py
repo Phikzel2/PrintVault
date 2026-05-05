@@ -3,6 +3,34 @@ from typing import Optional
 from pydantic import BaseModel
 
 
+class UserSettings(BaseModel):
+    date_format: str = "DD/MM/YYYY"
+
+
+class UserBase(BaseModel):
+    username: str
+
+
+class UserCreate(UserBase):
+    password: str
+
+
+class User(UserBase):
+    id: int
+    is_admin: bool
+    settings: UserSettings
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: User
+
+
 class TagBase(BaseModel):
     name: str
 
@@ -82,6 +110,8 @@ class PrintModelUpdate(BaseModel):
 class PrintModel(PrintModelBase):
     id: int
     thumbnail_path: Optional[str] = None
+    is_public: bool = False
+    owner_id: Optional[int] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     files: list[ModelFile] = []
@@ -94,6 +124,8 @@ class PrintModel(PrintModelBase):
 class PrintModelSummary(PrintModelBase):
     id: int
     thumbnail_path: Optional[str] = None
+    is_public: bool = False
+    owner_id: Optional[int] = None
     created_at: datetime
     tags: list[Tag] = []
     file_count: int = 0

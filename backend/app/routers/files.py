@@ -10,6 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
+from ..auth import get_current_user
 from ..config import settings
 from ..database import get_db
 from ..thumbnail import generate_thumbnail
@@ -43,10 +44,13 @@ async def upload_file(
     printer_id: Optional[int] = Form(None),
     source_file_id: Optional[int] = Form(None),
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
 ):
     model = db.query(models.PrintModel).filter(models.PrintModel.id == model_id).first()
     if not model:
         raise HTTPException(status_code=404, detail="Model not found")
+    if model.owner_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Access denied")
 
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
@@ -142,7 +146,7 @@ def download_file(file_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/files/{file_id}", status_code=204)
-def delete_file(file_id: int, db: Session = Depends(get_db)):
+def delete_file(file_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     db_file = db.query(models.ModelFile).filter(models.ModelFile.id == file_id).first()
     if not db_file:
         raise HTTPException(status_code=404, detail="File not found")
@@ -155,7 +159,7 @@ def delete_file(file_id: int, db: Session = Depends(get_db)):
 
 
 @router.patch("/files/{file_id}/printer", response_model=schemas.ModelFile)
-def assign_printer(file_id: int, printer_id: Optional[int] = None, db: Session = Depends(get_db)):
+def assign_printer(file_id: int, printer_id: Optional[int] = None, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     db_file = db.query(models.ModelFile).filter(models.ModelFile.id == file_id).first()
     if not db_file:
         raise HTTPException(status_code=404, detail="File not found")
@@ -166,7 +170,7 @@ def assign_printer(file_id: int, printer_id: Optional[int] = None, db: Session =
 
 
 @router.patch("/files/{file_id}/source", response_model=schemas.ModelFile)
-def assign_source_file(file_id: int, source_file_id: Optional[int] = None, db: Session = Depends(get_db)):
+def assign_source_file(file_id: int, source_file_id: Optional[int] = None, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     db_file = db.query(models.ModelFile).filter(models.ModelFile.id == file_id).first()
     if not db_file:
         raise HTTPException(status_code=404, detail="File not found")

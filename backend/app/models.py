@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    Column, Integer, String, Text, Float, BigInteger,
+    Boolean, Column, Integer, String, Text, Float, BigInteger,
     DateTime, ForeignKey, Table
 )
 from sqlalchemy.orm import relationship
@@ -14,6 +14,19 @@ model_tags = Table(
 )
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(100), unique=True, nullable=False, index=True)
+    hashed_password = Column(String(200), nullable=False)
+    is_admin = Column(Boolean, nullable=False, default=False)
+    settings = Column(Text, nullable=False, default="{}")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    models = relationship("PrintModel", back_populates="owner", foreign_keys="PrintModel.owner_id")
+
+
 class PrintModel(Base):
     __tablename__ = "print_models"
 
@@ -23,11 +36,14 @@ class PrintModel(Base):
     source_url = Column(String(500))
     license = Column(String(100))
     thumbnail_path = Column(String(500))
+    is_public = Column(Boolean, nullable=False, default=False)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     files = relationship("ModelFile", back_populates="model", cascade="all, delete-orphan")
     tags = relationship("Tag", secondary=model_tags, back_populates="models")
+    owner = relationship("User", back_populates="models", foreign_keys=[owner_id])
 
 
 class ModelFile(Base):

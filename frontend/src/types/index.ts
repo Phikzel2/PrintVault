@@ -38,6 +38,8 @@ export interface PrintModel {
   source_url: string | null;
   license: string | null;
   thumbnail_path: string | null;
+  is_public: boolean;
+  owner_id: number | null;
   created_at: string;
   updated_at: string | null;
   files: ModelFile[];
@@ -51,6 +53,8 @@ export interface PrintModelSummary {
   source_url: string | null;
   license: string | null;
   thumbnail_path: string | null;
+  is_public: boolean;
+  owner_id: number | null;
   created_at: string;
   tags: Tag[];
   file_count: number;
@@ -65,4 +69,24 @@ export interface PaginatedModels {
   page: number;
   page_size: number;
   pages: number;
+}
+
+export type DateFormat = "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
+
+export interface UserSettings {
+  date_format: DateFormat;
+}
+
+export interface User {
+  id: number;
+  username: string;
+  is_admin: boolean;
+  settings: UserSettings;
+  created_at: string;
+}
+
+export interface Token {
+  access_token: string;
+  token_type: string;
+  user: User;
 }

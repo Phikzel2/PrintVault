@@ -4,12 +4,15 @@ import { modelsApi, filesApi, printersApi } from "../api/client";
 import { ModelViewer } from "../components/ModelViewer";
 import { AddFilesModal } from "../components/AddFilesModal";
 import { FilesSection } from "../components/FilesSection";
+import { useAuth } from "../context/AuthContext";
+import { formatDate } from "../utils/format";
 import type { PrintModel, Printer } from "../types";
 
 
 export function ModelDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const modelId = Number(id);
 
   const [model, setModel] = useState<PrintModel | null>(null);
@@ -19,6 +22,9 @@ export function ModelDetail() {
   const [editData, setEditData] = useState({ name: "", description: "", source_url: "", license: "", tags: "" });
   const [showAddFiles, setShowAddFiles] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [visibilityBusy, setVisibilityBusy] = useState(false);
+
+  const canEdit = user && model ? (model.owner_id === user.id || user.is_admin) : false;
 
   const loadModel = async () => {
     try {
@@ -72,6 +78,17 @@ export function ModelDetail() {
   const deleteModel = async () => {
     await modelsApi.delete(modelId);
     navigate("/");
+  };
+
+  const toggleVisibility = async () => {
+    if (!model) return;
+    setVisibilityBusy(true);
+    try {
+      await modelsApi.setVisibility(modelId, !model.is_public);
+      setModel({ ...model, is_public: !model.is_public });
+    } finally {
+      setVisibilityBusy(false);
+    }
   };
 
   if (loading) {
@@ -128,11 +145,13 @@ export function ModelDetail() {
               <>
                 <div className="flex items-start justify-between gap-2">
                   <h1 className="text-lg font-semibold text-white leading-snug">{model.name}</h1>
-                  <button onClick={() => setEditing(true)} className="btn-ghost p-1.5 rounded shrink-0" title="Edit">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </button>
+                  {canEdit && (
+                    <button onClick={() => setEditing(true)} className="btn-ghost p-1.5 rounded shrink-0" title="Edit">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
                 {model.description && <p className="text-sm text-gray-400 mt-2">{model.description}</p>}
                 {model.tags.length > 0 && (
@@ -151,7 +170,7 @@ export function ModelDetail() {
                     </a>
                   )}
                   {model.license && <span>License: {model.license}</span>}
-                  <span>Added {new Date(model.created_at).toLocaleDateString("en-GB")}</span>
+                  <span>Added {formatDate(model.created_at, user?.settings.date_format)}</span>
                 </div>
               </>
             )}
@@ -168,22 +187,61 @@ export function ModelDetail() {
             onAddFiles={() => setShowAddFiles(true)}
           />
 
-          {/* Danger zone */}
-          <div className="card p-4 border-red-900/50">
-            {confirmDelete ? (
-              <div className="flex flex-col gap-2">
-                <p className="text-sm text-red-400">Delete this model and all its files?</p>
-                <div className="flex gap-2">
-                  <button className="btn-danger flex-1 text-sm" onClick={deleteModel}>Delete</button>
-                  <button className="btn-secondary flex-1 text-sm" onClick={() => setConfirmDelete(false)}>Cancel</button>
+          {/* Visibility */}
+          {canEdit && (
+            <div className="card p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-300">
+                    {model.is_public ? "Public" : "Private"}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    {model.is_public ? "Visible to all users" : "Only visible to you"}
+                  </p>
                 </div>
+                <button
+                  onClick={toggleVisibility}
+                  disabled={visibilityBusy}
+                  className={`btn-secondary text-sm flex items-center gap-1.5 ${visibilityBusy ? "opacity-50" : ""}`}
+                >
+                  {model.is_public ? (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      Make private
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
+                      </svg>
+                      Make public
+                    </>
+                  )}
+                </button>
               </div>
-            ) : (
-              <button onClick={() => setConfirmDelete(true)} className="btn-danger w-full text-sm">
-                Delete Model
-              </button>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* Danger zone */}
+          {canEdit && (
+            <div className="card p-4 border-red-900/50">
+              {confirmDelete ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm text-red-400">Delete this model and all its files?</p>
+                  <div className="flex gap-2">
+                    <button className="btn-danger flex-1 text-sm" onClick={deleteModel}>Delete</button>
+                    <button className="btn-secondary flex-1 text-sm" onClick={() => setConfirmDelete(false)}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setConfirmDelete(true)} className="btn-danger w-full text-sm">
+                  Delete Model
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

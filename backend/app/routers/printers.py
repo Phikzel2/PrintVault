@@ -1,18 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from .. import models, schemas
+from ..auth import get_current_user
 from ..database import get_db
 
 router = APIRouter(prefix="/printers", tags=["printers"])
 
 
 @router.get("", response_model=list[schemas.Printer])
-def list_printers(db: Session = Depends(get_db)):
+def list_printers(db: Session = Depends(get_db), _: models.User = Depends(get_current_user)):
     return db.query(models.Printer).order_by(models.Printer.name).all()
 
 
 @router.post("", response_model=schemas.Printer, status_code=201)
-def create_printer(data: schemas.PrinterCreate, db: Session = Depends(get_db)):
+def create_printer(data: schemas.PrinterCreate, db: Session = Depends(get_db), _: models.User = Depends(get_current_user)):
     printer = models.Printer(**data.model_dump())
     db.add(printer)
     db.commit()
@@ -21,7 +22,7 @@ def create_printer(data: schemas.PrinterCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{printer_id}", response_model=schemas.Printer)
-def update_printer(printer_id: int, data: schemas.PrinterCreate, db: Session = Depends(get_db)):
+def update_printer(printer_id: int, data: schemas.PrinterCreate, db: Session = Depends(get_db), _: models.User = Depends(get_current_user)):
     printer = db.query(models.Printer).filter(models.Printer.id == printer_id).first()
     if not printer:
         raise HTTPException(status_code=404, detail="Printer not found")
@@ -33,7 +34,7 @@ def update_printer(printer_id: int, data: schemas.PrinterCreate, db: Session = D
 
 
 @router.delete("/{printer_id}", status_code=204)
-def delete_printer(printer_id: int, db: Session = Depends(get_db)):
+def delete_printer(printer_id: int, db: Session = Depends(get_db), _: models.User = Depends(get_current_user)):
     printer = db.query(models.Printer).filter(models.Printer.id == printer_id).first()
     if not printer:
         raise HTTPException(status_code=404, detail="Printer not found")

@@ -1,10 +1,50 @@
 import axios from "axios";
-import type { PaginatedModels, PrintModel, PrintModelSummary, Printer, Tag } from "../types";
+import type { PaginatedModels, PrintModel, PrintModelSummary, Printer, Tag, Token, User, UserSettings } from "../types";
 
 const api = axios.create({
   baseURL: "/api",
-  paramsSerializer: { indexes: null }, // serialize arrays as tag=a&tag=b, not tag[]=a
+  paramsSerializer: { indexes: null },
 });
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && window.location.pathname !== "/login") {
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
+
+export const authApi = {
+  login: (username: string, password: string) => {
+    const form = new URLSearchParams();
+    form.append("username", username);
+    form.append("password", password);
+    return api.post<Token>("/auth/login", form, {
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+  },
+  me: () => api.get<User>("/auth/me"),
+};
+
+export const usersApi = {
+  list: () => api.get<User[]>("/users"),
+  create: (data: { username: string; password: string }) => api.post<User>("/users", data),
+  delete: (id: number) => api.delete(`/users/${id}`),
+  updateSettings: (settings: UserSettings) => api.put<User>("/users/me/settings", settings),
+  updatePassword: (current_password: string, new_password: string) =>
+    api.put("/users/me/password", { current_password, new_password }),
+};
 
 export const modelsApi = {
   list: (params?: {
@@ -24,6 +64,9 @@ export const modelsApi = {
     api.put<PrintModel>(`/models/${id}`, data),
 
   delete: (id: number) => api.delete(`/models/${id}`),
+
+  setVisibility: (id: number, is_public: boolean) =>
+    api.post(`/models/${id}/visibility`, null, { params: { is_public } }),
 
   uploadFile: (modelId: number, file: File, printerId?: number, sourceFileId?: number) => {
     const form = new FormData();
