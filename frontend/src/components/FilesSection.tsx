@@ -74,7 +74,11 @@ function GcodeRow({
   return (
     <div
       draggable
-      onDragStart={(e) => { e.stopPropagation(); onDragStart(file.id); }}
+      onDragStart={(e) => {
+        e.dataTransfer.setData("text/plain", String(file.id));
+        e.dataTransfer.effectAllowed = "move";
+        onDragStart(file.id);
+      }}
       onDragEnd={onDragEnd}
       className={`flex flex-col gap-1 py-2 px-2 rounded-lg transition-opacity select-none ${
         isDragging ? "opacity-40" : "hover:bg-gray-800/60 cursor-grab active:cursor-grabbing"
@@ -113,7 +117,7 @@ function GcodeRow({
 
 function SourceGroup({
   sourceFile, gcodes, printers, isDropTarget, isCollapsed,
-  activeDrag, onToggle, onDragOver, onDragLeave, onDrop,
+  activeDrag, draggingId, onToggle, onDragOver, onDragLeave, onDrop,
   onDragStart, onDragEnd, onPrinterChange, onDelete,
 }: {
   sourceFile: ModelFile;
@@ -122,6 +126,7 @@ function SourceGroup({
   isDropTarget: boolean;
   isCollapsed: boolean;
   activeDrag: boolean;
+  draggingId: number | null;
   onToggle: () => void;
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: (e: React.DragEvent) => void;
@@ -191,7 +196,7 @@ function SourceGroup({
               key={g.id}
               file={g}
               printers={printers}
-              isDragging={false}
+              isDragging={draggingId === g.id}
               onDragStart={onDragStart}
               onDragEnd={onDragEnd}
               onPrinterChange={onPrinterChange}
@@ -275,6 +280,7 @@ export function FilesSection({ files, printers, onDelete, onPrinterChange, onSou
             isDropTarget={dropTarget === sf.id}
             isCollapsed={collapsed.has(sf.id)}
             activeDrag={activeDrag}
+            draggingId={draggingId}
             onToggle={() => toggle(sf.id)}
             {...dragOverProps(sf.id)}
             onDragStart={setDraggingId}

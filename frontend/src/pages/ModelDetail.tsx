@@ -109,7 +109,7 @@ export function ModelDetail() {
         </div>
 
         {/* Metadata panel */}
-        <div className="lg:w-80 flex flex-col gap-4 shrink-0">
+        <div className="lg:w-[420px] flex flex-col gap-4 shrink-0">
           {/* Header */}
           <div className="card p-4">
             {editing ? (
