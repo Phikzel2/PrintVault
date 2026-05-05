@@ -66,6 +66,7 @@ def list_models(
     search: str = Query(None),
     tag: list[str] = Query(None),
     file_type: str = Query(None),
+    visibility: str = Query(None),  # "public" | "private"
     page: int = Query(1, ge=1),
     page_size: int = Query(24, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -80,6 +81,11 @@ def list_models(
         q = q.filter(
             or_(models.PrintModel.is_public == True, models.PrintModel.owner_id == current_user.id)
         )
+
+    if visibility == "public":
+        q = q.filter(models.PrintModel.is_public == True)
+    elif visibility == "private":
+        q = q.filter(models.PrintModel.is_public == False)
 
     if search:
         q = q.filter(

@@ -20,6 +20,7 @@ export function Home() {
   const search = searchParams.get("search") ?? "";
   const activeTag = searchParams.get("tag") ?? "";
   const activeType = searchParams.get("type") ?? "";
+  const activeVisibility = searchParams.get("visibility") ?? "";
   const page = Number(searchParams.get("page") ?? "1");
 
   const [models, setModels] = useState<PrintModelSummary[]>([]);
@@ -38,6 +39,7 @@ export function Home() {
       if (search) params.search = search;
       if (activeTag) params.tag = [activeTag];
       if (activeType) params.file_type = activeType;
+      if (activeVisibility) params.visibility = activeVisibility;
       const { data } = await modelsApi.list(params);
       setModels(data.items);
       setTotal(data.total);
@@ -45,7 +47,7 @@ export function Home() {
     } finally {
       setLoading(false);
     }
-  }, [search, activeTag, activeType, page]);
+  }, [search, activeTag, activeType, activeVisibility, page]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
@@ -122,6 +124,21 @@ export function Home() {
                     className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${activeType === t ? "bg-brand-600/20 text-brand-400" : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"}`}
                   >
                     {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Visibility</h3>
+              <div className="flex flex-col gap-1">
+                {(["", "public", "private"] as const).map((v) => (
+                  <button
+                    key={v || "all"}
+                    onClick={() => setParam("visibility", v === activeVisibility ? "" : v)}
+                    className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${activeVisibility === v ? "bg-brand-600/20 text-brand-400" : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"}`}
+                  >
+                    {v === "" ? "All" : v === "public" ? "Public" : "Private"}
                   </button>
                 ))}
               </div>

@@ -51,6 +51,7 @@ export const modelsApi = {
     search?: string;
     tag?: string[];
     file_type?: string;
+    visibility?: string;
     page?: number;
     page_size?: number;
   }) => api.get<PaginatedModels>("/models", { params }),
