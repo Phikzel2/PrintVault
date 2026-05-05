@@ -54,6 +54,7 @@ class PrinterBase(BaseModel):
     build_volume_y: Optional[float] = None
     build_volume_z: Optional[float] = None
     notes: Optional[str] = None
+    moonraker_url: Optional[str] = None
 
 
 class PrinterCreate(PrinterBase):

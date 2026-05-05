@@ -75,6 +75,7 @@ class Printer(Base):
     build_volume_y = Column(Float)
     build_volume_z = Column(Float)
     notes = Column(Text)
+    moonraker_url = Column(String(500))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     gcode_files = relationship("ModelFile", back_populates="printer")

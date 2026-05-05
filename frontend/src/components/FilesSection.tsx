@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { modelsApi, filesApi } from "../api/client";
 import { parseUploadError } from "../api/errors";
 
@@ -100,6 +100,8 @@ function DeleteBtn({ onDelete }: { onDelete: () => void }) {
 
 // ── GCODE row ────────────────────────────────────────────────────────────────
 
+type SendState = "idle" | "sending" | "ok" | "error";
+
 function GcodeRow({
   file, printers, isDragging,
   onDragStart, onDragEnd, onPrinterChange, onDelete,
@@ -112,6 +114,27 @@ function GcodeRow({
   onPrinterChange: (fileId: number, printerId: number | null) => void;
   onDelete: (id: number) => void;
 }) {
+  const [sendState, setSendState] = useState<SendState>("idle");
+  const [sendError, setSendError] = useState("");
+
+  const assignedPrinter = file.printer_id ? printers.find((p) => p.id === file.printer_id) : null;
+  const canSend = !!assignedPrinter?.moonraker_url;
+
+  const handleSend = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSendState("sending");
+    setSendError("");
+    try {
+      await filesApi.sendToPrinter(file.id);
+      setSendState("ok");
+      setTimeout(() => setSendState("idle"), 3000);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Send failed";
+      setSendError(msg);
+      setSendState("error");
+    }
+  }, [file.id]);
+
   return (
     <div
       draggable={true}
@@ -134,9 +157,34 @@ function GcodeRow({
           {file.original_filename}
         </span>
         <span className="text-xs text-gray-600 shrink-0">{formatBytes(file.file_size)}</span>
+        {canSend && (
+          <button
+            onClick={handleSend}
+            disabled={sendState === "sending"}
+            title={`Send to ${assignedPrinter!.name}`}
+            className={`btn-ghost p-1.5 rounded shrink-0 disabled:opacity-40 ${
+              sendState === "ok" ? "text-green-400" : sendState === "error" ? "text-red-400" : "text-gray-500 hover:text-brand-400"
+            }`}
+          >
+            {sendState === "sending" ? (
+              <span className="w-4 h-4 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin block" />
+            ) : sendState === "ok" ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            )}
+          </button>
+        )}
         <DownloadBtn file={file} />
         <DeleteBtn onDelete={() => onDelete(file.id)} />
       </div>
+      {sendState === "error" && (
+        <p className="pl-6 text-xs text-red-400">{sendError}</p>
+      )}
       {printers.length > 0 && (
         <div className="pl-6">
           <select

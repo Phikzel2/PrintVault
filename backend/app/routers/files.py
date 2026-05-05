@@ -169,6 +169,50 @@ def assign_printer(file_id: int, printer_id: Optional[int] = None, db: Session =
     return db_file
 
 
+@router.post("/files/{file_id}/send", status_code=200)
+async def send_to_printer(
+    file_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    import httpx
+
+    db_file = db.query(models.ModelFile).filter(models.ModelFile.id == file_id).first()
+    if not db_file:
+        raise HTTPException(status_code=404, detail="File not found")
+    if db_file.file_type != "GCODE":
+        raise HTTPException(status_code=400, detail="Only GCODE files can be sent to a printer")
+    if not db_file.printer_id:
+        raise HTTPException(status_code=400, detail="No printer assigned to this file")
+
+    printer = db.query(models.Printer).filter(models.Printer.id == db_file.printer_id).first()
+    if not printer or not printer.moonraker_url:
+        raise HTTPException(status_code=400, detail="Printer has no Moonraker URL configured")
+
+    if not os.path.exists(db_file.file_path):
+        raise HTTPException(status_code=404, detail="File not found on disk")
+
+    moonraker_url = printer.moonraker_url.rstrip("/")
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            with open(db_file.file_path, "rb") as f:
+                response = await client.post(
+                    f"{moonraker_url}/server/files/upload",
+                    files={"file": (db_file.original_filename, f, "application/octet-stream")},
+                    data={"root": "gcodes"},
+                )
+        response.raise_for_status()
+        return {"status": "uploaded", "filename": db_file.original_filename}
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Timeout connecting to printer — check the Moonraker URL and network")
+    except httpx.ConnectError:
+        raise HTTPException(status_code=502, detail="Cannot connect to printer — check the Moonraker URL and network")
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=502, detail=f"Moonraker returned {e.response.status_code}")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Send failed: {e}")
+
+
 @router.patch("/files/{file_id}/source", response_model=schemas.ModelFile)
 def assign_source_file(file_id: int, source_file_id: Optional[int] = None, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     db_file = db.query(models.ModelFile).filter(models.ModelFile.id == file_id).first()

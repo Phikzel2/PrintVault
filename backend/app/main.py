@@ -45,6 +45,11 @@ def _migrate(engine):
             "ALTER TABLE print_models ADD COLUMN is_public BOOLEAN NOT NULL DEFAULT FALSE",
             "UPDATE print_models SET is_public = TRUE WHERE owner_id IS NULL",
         ),
+        (
+            "printers.moonraker_url",
+            "ALTER TABLE printers ADD COLUMN moonraker_url VARCHAR(500)",
+            None,
+        ),
     ]
     for name, ddl, extra_dml in steps:
         with engine.connect() as conn:

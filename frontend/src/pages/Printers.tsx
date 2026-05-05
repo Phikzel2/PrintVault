@@ -5,7 +5,7 @@ import type { Printer } from "../types";
 const EMPTY_FORM = {
   name: "", brand: "", model_name: "",
   build_volume_x: "", build_volume_y: "", build_volume_z: "",
-  notes: "",
+  notes: "", moonraker_url: "",
 };
 
 function PrinterForm({
@@ -25,6 +25,7 @@ function PrinterForm({
     build_volume_y: initial?.build_volume_y?.toString() ?? "",
     build_volume_z: initial?.build_volume_z?.toString() ?? "",
     notes: initial?.notes ?? "",
+    moonraker_url: initial?.moonraker_url ?? "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +50,7 @@ function PrinterForm({
         build_volume_y: form.build_volume_y ? Number(form.build_volume_y) : null,
         build_volume_z: form.build_volume_z ? Number(form.build_volume_z) : null,
         notes: form.notes.trim() || null,
+        moonraker_url: form.moonraker_url.trim() || null,
       });
     } catch {
       setError("Save failed");
@@ -83,6 +85,11 @@ function PrinterForm({
         <div>
           <label className="label">Build Z (mm)</label>
           <input className="input" type="number" placeholder="256" {...field("build_volume_z")} />
+        </div>
+        <div className="col-span-2">
+          <label className="label">Moonraker URL</label>
+          <input className="input" placeholder="http://192.168.1.100:7125" {...field("moonraker_url")} />
+          <p className="text-xs text-gray-600 mt-1">Required to push GCODE files directly to the printer (Klipper/Moonraker)</p>
         </div>
         <div className="col-span-2">
           <label className="label">Notes</label>
@@ -177,6 +184,14 @@ export function Printers() {
                     {(p.build_volume_x || p.build_volume_y || p.build_volume_z) && (
                       <p className="text-xs text-gray-600 mt-1">
                         Build: {p.build_volume_x ?? "?"} × {p.build_volume_y ?? "?"} × {p.build_volume_z ?? "?"} mm
+                      </p>
+                    )}
+                    {p.moonraker_url && (
+                      <p className="text-xs text-gray-600 mt-1 flex items-center gap-1">
+                        <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                        {p.moonraker_url}
                       </p>
                     )}
                     {p.notes && <p className="text-sm text-gray-500 mt-1">{p.notes}</p>}

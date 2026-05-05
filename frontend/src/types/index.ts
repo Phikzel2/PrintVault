@@ -12,6 +12,7 @@ export interface Printer {
   build_volume_y: number | null;
   build_volume_z: number | null;
   notes: string | null;
+  moonraker_url: string | null;
   created_at: string;
 }
 

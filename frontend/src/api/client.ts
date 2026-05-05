@@ -102,4 +102,5 @@ export const filesApi = {
     api.patch(`/files/${fileId}/printer`, null, { params: { printer_id: printerId } }),
   assignSource: (fileId: number, sourceFileId: number | null) =>
     api.patch(`/files/${fileId}/source`, null, { params: { source_file_id: sourceFileId } }),
+  sendToPrinter: (fileId: number) => api.post(`/files/${fileId}/send`),
 };
