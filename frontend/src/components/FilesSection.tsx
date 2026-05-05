@@ -1,6 +1,22 @@
 import { useState } from "react";
-import { filesApi } from "../api/client";
+import { modelsApi, filesApi } from "../api/client";
+import { parseUploadError } from "../api/errors";
 import type { ModelFile, Printer } from "../types";
+
+function getFileTypeLabel(name: string): string {
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  const map: Record<string, string> = {
+    stl: "STL", "3mf": "3MF", gcode: "GCODE", gc: "GCODE", gco: "GCODE",
+    obj: "OBJ", step: "STEP", stp: "STEP", amf: "AMF",
+  };
+  return map[ext] ?? "OTHER";
+}
+
+function isFileDrag(e: React.DragEvent): boolean {
+  return Array.from(e.dataTransfer.types).some(
+    (t) => t === "Files" || t === "application/x-moz-file",
+  );
+}
 
 const TYPE_COLORS: Record<string, string> = {
   STL:   "bg-blue-900/50 text-blue-300 border-blue-800",
@@ -78,7 +94,6 @@ function GcodeRow({
       onDragStart={(e) => {
         e.dataTransfer.setData("text/plain", String(file.id));
         e.dataTransfer.effectAllowed = "move";
-        // Defer state update so the drag ghost captures the pre-fade DOM
         setTimeout(() => onDragStart(file.id), 0);
       }}
       onDragEnd={onDragEnd}
@@ -87,7 +102,6 @@ function GcodeRow({
       }`}
     >
       <div className="flex items-center gap-2 select-none">
-        {/* drag handle */}
         <svg className="w-3.5 h-3.5 text-gray-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path d="M7 2a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zM17 2a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
@@ -118,9 +132,10 @@ function GcodeRow({
 // ── Source file group ─────────────────────────────────────────────────────────
 
 function SourceGroup({
-  sourceFile, gcodes, printers, isDropTarget, isCollapsed,
-  activeDrag, draggingId, onToggle,
-  onDragEnter, onDragOver, onDragLeave, onDrop,
+  sourceFile, gcodes, printers,
+  isDropTarget, isCollapsed, activeDrag, draggingId,
+  externalDrag, externalIsTarget,
+  onToggle, onDragEnter, onDragOver, onDragLeave, onDrop,
   onDragStart, onDragEnd, onPrinterChange, onDelete,
 }: {
   sourceFile: ModelFile;
@@ -130,6 +145,8 @@ function SourceGroup({
   isCollapsed: boolean;
   activeDrag: boolean;
   draggingId: number | null;
+  externalDrag: boolean;
+  externalIsTarget: boolean;
   onToggle: () => void;
   onDragEnter: (e: React.DragEvent) => void;
   onDragOver: (e: React.DragEvent) => void;
@@ -140,6 +157,9 @@ function SourceGroup({
   onPrinterChange: (fileId: number, printerId: number | null) => void;
   onDelete: (id: number) => void;
 }) {
+  const anyDrag = activeDrag || externalDrag;
+  const isTarget = isDropTarget || externalIsTarget;
+
   return (
     <div
       onDragEnter={onDragEnter}
@@ -147,9 +167,9 @@ function SourceGroup({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       className={`rounded-xl border transition-colors ${
-        isDropTarget
+        isTarget
           ? "border-brand-500 bg-brand-600/10"
-          : activeDrag
+          : anyDrag
           ? "border-gray-700 border-dashed"
           : "border-transparent"
       }`}
@@ -179,15 +199,19 @@ function SourceGroup({
         <DeleteBtn onDelete={() => onDelete(sourceFile.id)} />
       </div>
 
-      {/* Drop hint */}
-      {activeDrag && !isCollapsed && (
+      {/* Drop hint — shared for internal drag and Finder drop */}
+      {anyDrag && !isCollapsed && (
         <div className={`mx-3 mb-2 rounded-lg border border-dashed py-1.5 text-center text-xs transition-colors ${
-          isDropTarget ? "border-brand-500 text-brand-400" : "border-gray-700 text-gray-600"
+          isTarget ? "border-brand-500 text-brand-400" : "border-gray-700 text-gray-600"
         }`}>
-          {isDropTarget ? "Release to link here" : "Drop GCODE to link"}
+          {isTarget
+            ? "Release to link here"
+            : externalDrag
+            ? "Drop file to upload & link GCODE"
+            : "Drop GCODE to link"}
         </div>
       )}
-      {activeDrag && isCollapsed && isDropTarget && (
+      {anyDrag && isCollapsed && isTarget && (
         <div className="mx-3 mb-2 rounded-lg border border-dashed border-brand-500 py-1.5 text-center text-xs text-brand-400">
           Release to link here
         </div>
@@ -217,18 +241,27 @@ function SourceGroup({
 // ── Main component ─────────────────────────────────────────────────────────────
 
 interface FilesSectionProps {
+  modelId: number;
   files: ModelFile[];
   printers: Printer[];
   onDelete: (id: number) => void;
   onPrinterChange: (fileId: number, printerId: number | null) => void;
   onSourceChange: (fileId: number, sourceFileId: number | null) => void;
+  onUploadSuccess: () => void;
   onAddFiles: () => void;
 }
 
-export function FilesSection({ files, printers, onDelete, onPrinterChange, onSourceChange, onAddFiles }: FilesSectionProps) {
+export function FilesSection({
+  modelId, files, printers,
+  onDelete, onPrinterChange, onSourceChange, onUploadSuccess, onAddFiles,
+}: FilesSectionProps) {
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<number | "unlinked" | null>(null);
+  const [externalDrag, setExternalDrag] = useState(false);
+  const [externalTarget, setExternalTarget] = useState<number | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const sourceFiles = files.filter((f) => f.file_type !== "GCODE");
   const gcodes = files.filter((f) => f.file_type === "GCODE");
@@ -245,35 +278,114 @@ export function FilesSection({ files, printers, onDelete, onPrinterChange, onSou
   const toggle = (id: number) =>
     setCollapsed((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
-  // Read ID from dataTransfer so there's no stale-closure dependency on draggingId state
+  const uploadFiles = async (fileList: File[], sourceFileId: number | null) => {
+    if (!fileList.length) return;
+    setUploading(true);
+    setUploadError(null);
+    try {
+      for (const file of fileList) {
+        const { data: uploaded } = await modelsApi.uploadFile(modelId, file);
+        if (getFileTypeLabel(file.name) === "GCODE" && sourceFileId != null) {
+          await filesApi.assignSource(uploaded.id, sourceFileId);
+        }
+      }
+      onUploadSuccess();
+    } catch (err) {
+      setUploadError(parseUploadError(err));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Unified drop props: handles both internal GCODE drag and OS file drops.
+  // stopPropagation prevents the outer card from double-handling the same drop.
   const dropProps = (target: number | "unlinked") => ({
-    onDragEnter: (e: React.DragEvent) => { e.preventDefault(); setDropTarget(target); },
+    onDragEnter: (e: React.DragEvent) => {
+      e.preventDefault();
+      if (isFileDrag(e)) {
+        setExternalDrag(true);
+        setExternalTarget(typeof target === "number" ? target : null);
+      } else {
+        setDropTarget(target);
+      }
+    },
     onDragOver: (e: React.DragEvent) => { e.preventDefault(); },
     onDragLeave: (e: React.DragEvent) => {
-      if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropTarget(null);
+      if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+        setDropTarget(null);
+        setExternalTarget(null);
+      }
     },
     onDrop: (e: React.DragEvent) => {
       e.preventDefault();
-      const id = Number(e.dataTransfer.getData("text/plain"));
-      if (id) onSourceChange(id, target === "unlinked" ? null : target as number);
-      setDraggingId(null);
-      setDropTarget(null);
+      e.stopPropagation();
+      if (isFileDrag(e)) {
+        const sourceId = typeof target === "number" ? target : null;
+        uploadFiles(Array.from(e.dataTransfer.files), sourceId);
+      } else {
+        const id = Number(e.dataTransfer.getData("text/plain"));
+        if (id) onSourceChange(id, target === "unlinked" ? null : target as number);
+        setDraggingId(null);
+        setDropTarget(null);
+      }
+      setExternalDrag(false);
+      setExternalTarget(null);
     },
   });
 
   const activeDrag = draggingId != null;
+  const anyExternalDrag = externalDrag && !activeDrag;
 
   return (
-    <div className="card p-4">
+    <div
+      className={`card p-4 transition-colors ${anyExternalDrag ? "ring-1 ring-brand-500/40" : ""}`}
+      // Outer card: catches file drops not handled by a specific zone
+      onDragEnter={(e) => {
+        if (isFileDrag(e)) { e.preventDefault(); setExternalDrag(true); }
+      }}
+      onDragOver={(e) => {
+        if (anyExternalDrag) e.preventDefault();
+      }}
+      onDragLeave={(e) => {
+        const rel = e.relatedTarget as Node | null;
+        if (!rel || !e.currentTarget.contains(rel)) {
+          setExternalDrag(false);
+          setExternalTarget(null);
+        }
+      }}
+      onDrop={(e) => {
+        if (!isFileDrag(e)) return;
+        e.preventDefault();
+        uploadFiles(Array.from(e.dataTransfer.files), null);
+        setExternalDrag(false);
+        setExternalTarget(null);
+      }}
+    >
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-gray-300">Files</h2>
-        <button onClick={onAddFiles} className="btn-ghost text-xs px-2 py-1 rounded">
-          + Add files
-        </button>
+        <div className="flex items-center gap-2">
+          {uploading && (
+            <span className="w-3.5 h-3.5 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
+          )}
+          <button onClick={onAddFiles} className="btn-ghost text-xs px-2 py-1 rounded">
+            + Add files
+          </button>
+        </div>
       </div>
 
+      {uploadError && (
+        <div className="mb-3 px-3 py-2 bg-red-900/30 border border-red-800 rounded-lg text-red-400 text-xs flex items-center gap-2">
+          <span className="flex-1">{uploadError}</span>
+          <button onClick={() => setUploadError(null)} className="shrink-0 hover:text-red-300">✕</button>
+        </div>
+      )}
+
       {files.length === 0 && (
-        <p className="text-sm text-gray-600 text-center py-4">No files yet</p>
+        <div className={`rounded-xl border border-dashed py-6 text-center text-sm transition-colors ${
+          anyExternalDrag ? "border-brand-500 text-brand-400" : "border-gray-800 text-gray-600"
+        }`}>
+          {anyExternalDrag ? "Release to upload" : "No files yet"}
+        </div>
       )}
 
       <div className="flex flex-col gap-1">
@@ -287,6 +399,8 @@ export function FilesSection({ files, printers, onDelete, onPrinterChange, onSou
             isCollapsed={collapsed.has(sf.id)}
             activeDrag={activeDrag}
             draggingId={draggingId}
+            externalDrag={anyExternalDrag}
+            externalIsTarget={externalTarget === sf.id}
             onToggle={() => toggle(sf.id)}
             {...dropProps(sf.id)}
             onDragStart={setDraggingId}
@@ -348,6 +462,17 @@ export function FilesSection({ files, printers, onDelete, onPrinterChange, onSou
             onDelete={onDelete}
           />
         ))}
+
+        {/* Generic drop hint when Finder drag is active but no SourceGroup is targeted */}
+        {anyExternalDrag && sourceFiles.length > 0 && (
+          <div className={`mt-1 rounded-xl border border-dashed py-2 text-center text-xs transition-colors ${
+            externalTarget === null
+              ? "border-brand-500 text-brand-400"
+              : "border-gray-700 text-gray-600"
+          }`}>
+            {externalTarget === null ? "Drop here to upload without linking" : "Drop to upload"}
+          </div>
+        )}
       </div>
     </div>
   );

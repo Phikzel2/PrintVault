@@ -158,11 +158,13 @@ export function ModelDetail() {
           </div>
 
           <FilesSection
+            modelId={modelId}
             files={model.files}
             printers={printers}
             onDelete={deleteFile}
             onPrinterChange={changePrinter}
             onSourceChange={changeSource}
+            onUploadSuccess={loadModel}
             onAddFiles={() => setShowAddFiles(true)}
           />
 
