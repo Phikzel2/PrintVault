@@ -113,10 +113,6 @@ _PRINTABLES_CDN = "https://media.printables.com"
 _UUID_RE = re.compile(r"media/prints/([0-9a-f-]{36})/", re.IGNORECASE)
 
 
-def _printables_cdn_url(model_uuid: str, file_type: str, file_id: str, filename: str) -> str:
-    return f"{_PRINTABLES_CDN}/media/prints/{model_uuid}/{file_type}/{file_id}/{filename}"
-
-
 async def _fetch_printables(model_id: str) -> ImportPreview:
     query = """
     query PrintDetail($id: ID!) {
@@ -151,40 +147,45 @@ async def _fetch_printables(model_id: str) -> ImportPreview:
     if not p:
         raise HTTPException(404, "Printables model not found or is private")
 
-    # Extract model UUID from the first filePreviewPath we can find
-    # e.g. "media/prints/e1d906a6-b445-4f18-9525-7205b5a2af64/previews/abc.png"
+    # Printables CDN path structure:
+    #   previews/{file_uuid}.png   ← what filePreviewPath contains
+    #   stls/{file_uuid}.{ext}     ← actual source file (same UUID, different ext)
+    # Extract model UUID and per-file UUID from each file's filePreviewPath.
+    _FILE_UUID_RE = re.compile(r"media/prints/([0-9a-f-]{36})/previews/([0-9a-f-]{36})", re.IGNORECASE)
+
+    def _stl_url(preview_path: str, filename: str) -> str | None:
+        m = _FILE_UUID_RE.search(preview_path or "")
+        if not m:
+            return None
+        model_uuid, file_uuid = m.group(1), m.group(2)
+        ext = Path(filename).suffix.lower()
+        return f"{_PRINTABLES_CDN}/media/prints/{model_uuid}/stls/{file_uuid}{ext}"
+
+    # Extract model UUID for GCODE files (no preview path available)
     model_uuid: str | None = None
     for f in (p.get("stls") or []) + (p.get("slas") or []):
         if m := _UUID_RE.search(f.get("filePreviewPath") or ""):
             model_uuid = m.group(1)
             break
 
-    if not model_uuid:
-        logger.warning("Could not determine Printables model UUID — files will be skipped")
-
     files: list[ImportFile] = []
-    if model_uuid:
-        for f in (p.get("stls") or []):
-            files.append(ImportFile(
-                name=f["name"],
-                download_url=_printables_cdn_url(model_uuid, "stls", f["id"], f["name"]),
-                size=f.get("fileSize"),
-                file_type="STL",
-            ))
-        for f in (p.get("gcodes") or []):
-            files.append(ImportFile(
-                name=f["name"],
-                download_url=_printables_cdn_url(model_uuid, "gcodes", f["id"], f["name"]),
-                size=f.get("fileSize"),
-                file_type="GCODE",
-            ))
-        for f in (p.get("slas") or []):
-            files.append(ImportFile(
-                name=f["name"],
-                download_url=_printables_cdn_url(model_uuid, "slas", f["id"], f["name"]),
-                size=f.get("fileSize"),
-                file_type="STL",
-            ))
+    for f in (p.get("stls") or []):
+        url = _stl_url(f.get("filePreviewPath"), f["name"])
+        if url:
+            files.append(ImportFile(name=f["name"], download_url=url, size=f.get("fileSize"), file_type="STL"))
+        else:
+            logger.warning("No filePreviewPath for STL %s — skipping", f["name"])
+    for f in (p.get("gcodes") or []):
+        if model_uuid:
+            # GCODEs have no preview; use model UUID + integer ID as best guess
+            url = f"{_PRINTABLES_CDN}/media/prints/{model_uuid}/gcodes/{f['id']}/{f['name']}"
+            files.append(ImportFile(name=f["name"], download_url=url, size=f.get("fileSize"), file_type="GCODE"))
+    for f in (p.get("slas") or []):
+        url = _stl_url(f.get("filePreviewPath"), f["name"])
+        if url:
+            files.append(ImportFile(name=f["name"], download_url=url, size=f.get("fileSize"), file_type="STL"))
+        else:
+            logger.warning("No filePreviewPath for SLA %s — skipping", f["name"])
 
     license_name = (p.get("license") or {}).get("name")
     description = p.get("description") or p.get("summary")
