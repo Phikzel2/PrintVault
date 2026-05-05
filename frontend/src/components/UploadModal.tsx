@@ -5,6 +5,7 @@ import { parseUploadError } from "../api/errors";
 import type { Printer } from "../types";
 
 interface UploadModalProps {
+  initialFiles?: File[];
   onClose: () => void;
   onSuccess: (modelId: number) => void;
 }
@@ -37,14 +38,16 @@ interface PendingFile {
   sourcePendingIdx: number | null; // index of the STL/3MF in pendingFiles this GCODE was sliced from
 }
 
-export function UploadModal({ onClose, onSuccess }: UploadModalProps) {
+export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalProps) {
   const [step, setStep] = useState<Step>("meta");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [license, setLicense] = useState("");
   const [tagInput, setTagInput] = useState("");
-  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>(() =>
+    (initialFiles ?? []).map((f) => ({ file: f, printerId: null, sourcePendingIdx: null })),
+  );
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -137,6 +140,11 @@ export function UploadModal({ onClose, onSuccess }: UploadModalProps) {
               }`}
             >
               {i + 1}. {s === "meta" ? "Details" : "Files"}
+              {s === "files" && pendingFiles.length > 0 && (
+                <span className="ml-1.5 text-xs bg-brand-600/30 text-brand-400 px-1.5 py-0.5 rounded-full">
+                  {pendingFiles.length}
+                </span>
+              )}
             </button>
           ))}
         </div>

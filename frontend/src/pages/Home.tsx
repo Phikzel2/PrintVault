@@ -7,6 +7,12 @@ import type { PrintModelSummary, Tag } from "../types";
 
 const FILE_TYPES = ["STL", "3MF", "GCODE", "OBJ", "STEP"];
 
+function isFileDrag(e: React.DragEvent): boolean {
+  return Array.from(e.dataTransfer.types).some(
+    (t) => t === "Files" || t === "application/x-moz-file",
+  );
+}
+
 export function Home() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -22,6 +28,8 @@ export function Home() {
   const [loading, setLoading] = useState(true);
   const [tags, setTags] = useState<Tag[]>([]);
   const [showUpload, setShowUpload] = useState(false);
+  const [externalDrag, setExternalDrag] = useState(false);
+  const [dropFiles, setDropFiles] = useState<File[] | undefined>(undefined);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -51,8 +59,49 @@ export function Home() {
     setSearchParams(next);
   };
 
+  const handlePageDragEnter = (e: React.DragEvent) => {
+    if (isFileDrag(e)) { e.preventDefault(); setExternalDrag(true); }
+  };
+  const handlePageDragOver = (e: React.DragEvent) => {
+    if (externalDrag) e.preventDefault();
+  };
+  const handlePageDragLeave = (e: React.DragEvent) => {
+    const rel = e.relatedTarget as Node | null;
+    if (!rel || !e.currentTarget.contains(rel)) setExternalDrag(false);
+  };
+  const handlePageDrop = (e: React.DragEvent) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files);
+    setExternalDrag(false);
+    if (files.length > 0) {
+      setDropFiles(files);
+      setShowUpload(true);
+    }
+  };
+
   return (
-    <>
+    <div
+      className="min-h-screen"
+      onDragEnter={handlePageDragEnter}
+      onDragOver={handlePageDragOver}
+      onDragLeave={handlePageDragLeave}
+      onDrop={handlePageDrop}
+    >
+      {/* Full-page drop overlay */}
+      {externalDrag && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm pointer-events-none">
+          <div className="border-2 border-dashed border-brand-500 rounded-2xl px-20 py-14 text-center bg-gray-900/90">
+            <svg className="w-14 h-14 text-brand-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <p className="text-xl font-semibold text-brand-400">Drop to add new model</p>
+            <p className="text-sm text-gray-400 mt-2">STL · 3MF · GCODE · OBJ · STEP · AMF</p>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 py-6 flex gap-6">
         {/* Sidebar filters */}
         <aside className="w-52 shrink-0 hidden md:block">
@@ -160,13 +209,15 @@ export function Home() {
 
       {showUpload && (
         <UploadModal
-          onClose={() => setShowUpload(false)}
+          initialFiles={dropFiles}
+          onClose={() => { setShowUpload(false); setDropFiles(undefined); }}
           onSuccess={(id) => {
             setShowUpload(false);
+            setDropFiles(undefined);
             navigate(`/models/${id}`);
           }}
         />
       )}
-    </>
+    </div>
   );
 }
