@@ -90,3 +90,20 @@ export interface Token {
   token_type: string;
   user: User;
 }
+
+export interface ImportFile {
+  name: string;
+  download_url: string;
+  size: number | null;
+  file_type: string;
+}
+
+export interface ImportPreview {
+  platform: string;
+  name: string;
+  description: string | null;
+  source_url: string;
+  license: string | null;
+  tags: string[];
+  files: ImportFile[];
+}

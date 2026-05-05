@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .database import Base, engine
-from .routers import models, files, printers, tags, auth, users
+from .routers import models, files, printers, tags, auth, users, imports
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -71,6 +71,7 @@ app.include_router(models.router, prefix="/api")
 app.include_router(files.router, prefix="/api")
 app.include_router(printers.router, prefix="/api")
 app.include_router(tags.router, prefix="/api")
+app.include_router(imports.router, prefix="/api")
 
 
 @app.get("/api/health")

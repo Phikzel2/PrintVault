@@ -9,14 +9,16 @@ import { Printers } from "./pages/Printers";
 import { Settings } from "./pages/Settings";
 import { Login } from "./pages/Login";
 import { UploadModal } from "./components/UploadModal";
+import { ImportModal } from "./components/ImportModal";
 
 function AppShell() {
   const navigate = useNavigate();
   const [showUpload, setShowUpload] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   return (
     <div className="min-h-screen">
-      <Header onAddModel={() => setShowUpload(true)} />
+      <Header onAddModel={() => setShowUpload(true)} onImport={() => setShowImport(true)} />
       <Routes>
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/models/:id" element={<ProtectedRoute><ModelDetail /></ProtectedRoute>} />
@@ -33,6 +35,7 @@ function AppShell() {
           }}
         />
       )}
+      {showImport && <ImportModal onClose={() => setShowImport(false)} />}
     </div>
   );
 }

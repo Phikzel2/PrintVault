@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { PaginatedModels, PrintModel, PrintModelSummary, Printer, Tag, Token, User, UserSettings } from "../types";
+import type { ImportFile, ImportPreview, PaginatedModels, PrintModel, PrintModelSummary, Printer, Tag, Token, User, UserSettings } from "../types";
 
 const api = axios.create({
   baseURL: "/api",
@@ -93,6 +93,19 @@ export const printersApi = {
 
 export const tagsApi = {
   list: () => api.get<Tag[]>("/tags"),
+};
+
+export const importApi = {
+  preview: (url: string) =>
+    api.post<ImportPreview>("/import/preview", { url }),
+  confirm: (data: {
+    name: string;
+    description?: string | null;
+    source_url: string;
+    license?: string | null;
+    tags: string[];
+    files: ImportFile[];
+  }) => api.post<PrintModel>("/import/confirm", data),
 };
 
 export const filesApi = {
