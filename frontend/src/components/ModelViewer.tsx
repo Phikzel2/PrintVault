@@ -1,6 +1,6 @@
-import { Suspense, useRef, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Canvas, useLoader } from "@react-three/fiber";
-import { OrbitControls, Center, Environment, useProgress, Html } from "@react-three/drei";
+import { OrbitControls, Center, Bounds, useBounds, useProgress, Html } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { ThreeMFLoader } from "three/examples/jsm/loaders/3MFLoader.js";
 import * as THREE from "three";
@@ -19,6 +19,15 @@ function Loader() {
   );
 }
 
+// Fits the camera to the bounds after the model finishes loading
+function FitOnLoad() {
+  const bounds = useBounds();
+  useEffect(() => {
+    bounds.refresh().fit();
+  }, [bounds]);
+  return null;
+}
+
 function STLModel({ url }: { url: string }) {
   const geometry = useLoader(STLLoader, url);
   geometry.computeVertexNormals();
@@ -27,6 +36,7 @@ function STLModel({ url }: { url: string }) {
       <mesh geometry={geometry} castShadow receiveShadow>
         <meshStandardMaterial color="#6366f1" roughness={0.4} metalness={0.1} />
       </mesh>
+      <FitOnLoad />
     </Center>
   );
 }
@@ -42,6 +52,7 @@ function ThreeMFModel({ url }: { url: string }) {
   return (
     <Center>
       <primitive object={object} castShadow />
+      <FitOnLoad />
     </Center>
   );
 }
@@ -91,7 +102,7 @@ export function ModelViewer({ files }: ModelViewerProps) {
         {fileUrl && activeFile && (
           <Canvas
             shadows
-            camera={{ position: [3, 3, 3], fov: 45 }}
+            camera={{ position: [0, 0, 5], fov: 50 }}
             gl={{ antialias: true }}
             className="w-full h-full"
           >
@@ -100,16 +111,17 @@ export function ModelViewer({ files }: ModelViewerProps) {
             <directionalLight position={[5, 8, 5]} intensity={1.5} castShadow />
             <directionalLight position={[-5, 2, -5]} intensity={0.3} />
 
-            <Suspense fallback={<Loader />}>
-              {activeFile.file_type === "STL" ? (
-                <STLModel key={activeFile.id} url={fileUrl} />
-              ) : (
-                <ThreeMFModel key={activeFile.id} url={fileUrl} />
-              )}
-            </Suspense>
+            <Bounds fit clip observe margin={1.2}>
+              <Suspense fallback={<Loader />}>
+                {activeFile.file_type === "STL" ? (
+                  <STLModel key={activeFile.id} url={fileUrl} />
+                ) : (
+                  <ThreeMFModel key={activeFile.id} url={fileUrl} />
+                )}
+              </Suspense>
+            </Bounds>
 
             <OrbitControls makeDefault enableDamping dampingFactor={0.05} />
-            <gridHelper args={[10, 10, "#1f2937", "#1f2937"]} position={[0, -1, 0]} />
           </Canvas>
         )}
 
