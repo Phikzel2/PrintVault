@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Canvas, useLoader } from "@react-three/fiber";
 import { OrbitControls, Center, Bounds, useBounds, useProgress, Html } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
@@ -6,6 +6,91 @@ import { ThreeMFLoader } from "three/examples/jsm/loaders/3MFLoader.js";
 import * as THREE from "three";
 import type { ModelFile } from "../types";
 import { filesApi } from "../api/client";
+
+const SLICERS = [
+  { id: "orca",  name: "Orca Slicer",  scheme: "orcaslicer" },
+  { id: "bambu", name: "Bambu Studio", scheme: "bambustudio" },
+  { id: "prusa", name: "PrusaSlicer",  scheme: "prusaslicer" },
+  { id: "super", name: "SuperSlicer",  scheme: "superslicer" },
+] as const;
+
+type SlicerId = typeof SLICERS[number]["id"];
+const PREF_KEY = "preferred-slicer";
+
+function SlicerButton({ fileId }: { fileId: number }) {
+  const [preferred, setPreferred] = useState<SlicerId | null>(
+    () => localStorage.getItem(PREF_KEY) as SlicerId | null
+  );
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const launch = (slicer: typeof SLICERS[number]) => {
+    const fileUrl = window.location.origin + filesApi.downloadUrl(fileId);
+    const a = document.createElement("a");
+    a.href = `${slicer.scheme}://open?file=${encodeURIComponent(fileUrl)}`;
+    a.click();
+    setPreferred(slicer.id);
+    localStorage.setItem(PREF_KEY, slicer.id);
+    setOpen(false);
+  };
+
+  const active = SLICERS.find((s) => s.id === preferred);
+
+  return (
+    <div ref={ref} className="absolute bottom-3 left-3 flex items-center">
+      <button
+        onClick={() => active ? launch(active) : setOpen((v) => !v)}
+        className="flex items-center gap-1.5 text-xs bg-gray-900/80 hover:bg-gray-800 border border-gray-700 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-l-lg transition-colors backdrop-blur-sm"
+      >
+        <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+        {active ? active.name : "Open in slicer"}
+      </button>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center px-1.5 py-1.5 text-xs bg-gray-900/80 hover:bg-gray-800 border border-l-0 border-gray-700 text-gray-500 hover:text-white rounded-r-lg transition-colors backdrop-blur-sm"
+      >
+        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute bottom-full mb-1.5 left-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl py-1 min-w-[150px] z-10">
+          {SLICERS.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => launch(s)}
+              className={`w-full text-left text-xs px-3 py-1.5 transition-colors flex items-center gap-2 ${
+                s.id === preferred
+                  ? "text-brand-400 bg-brand-900/20"
+                  : "text-gray-300 hover:bg-gray-800 hover:text-white"
+              }`}
+            >
+              {s.id === preferred && (
+                <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              )}
+              {s.id !== preferred && <span className="w-3 shrink-0" />}
+              {s.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Loader() {
   const { progress } = useProgress();
@@ -127,6 +212,7 @@ export function ModelViewer({ files }: ModelViewerProps) {
           </Canvas>
         )}
 
+        <SlicerButton fileId={activeFile.id} />
         <div className="absolute bottom-3 right-3 text-xs text-gray-600 select-none pointer-events-none">
           Drag to rotate · Scroll to zoom
         </div>
