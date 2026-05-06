@@ -163,7 +163,7 @@ function GcodeRow({
           </span>
         )}
         <span className="text-xs text-gray-600 shrink-0 group-hover:hidden">{formatBytes(file.file_size)}</span>
-        <div className="icon-cluster absolute right-0 inset-y-0 flex items-center gap-0.5 pr-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-100">
+        <div className="absolute right-0 inset-y-0 flex items-center gap-0.5 pr-1 pl-4 bg-gray-900 group-hover:bg-[#192231] opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-[opacity,background-color] duration-100">
             {canSend && (
               <button
                 onClick={handleSend}
@@ -293,7 +293,7 @@ function SourceGroup({
         <span className="text-xs text-gray-600 shrink-0 group-hover:hidden">
           {formatBytes(sourceFile.file_size)}
         </span>
-        <div className="icon-cluster absolute right-0 inset-y-0 flex items-center gap-0.5 pr-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-100">
+        <div className="absolute right-0 inset-y-0 flex items-center gap-0.5 pr-1 pl-4 bg-gray-900 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-100">
           {THUMBNAIL_TYPES.has(sourceFile.file_type) && (
             <ThumbnailBtn onClick={onSetThumbnail} busy={thumbBusy} />
           )}
