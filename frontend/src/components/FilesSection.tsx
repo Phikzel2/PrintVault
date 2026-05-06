@@ -163,8 +163,7 @@ function GcodeRow({
           </span>
         )}
         <span className="text-xs text-gray-600 shrink-0 group-hover:hidden">{formatBytes(file.file_size)}</span>
-        <div className="overflow-hidden max-w-0 group-hover:max-w-[130px] transition-[max-width] duration-150 shrink-0">
-          <div className="flex items-center gap-0.5 pl-1">
+        <div className="flex items-center gap-0.5 pl-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-100 shrink-0">
             {canSend && (
               <button
                 onClick={handleSend}
@@ -203,7 +202,6 @@ function GcodeRow({
                 </svg>
               </button>
             )}
-          </div>
         </div>
       </div>
       {showPrinter && printers.length > 0 && (
@@ -295,14 +293,12 @@ function SourceGroup({
         <span className="text-xs text-gray-600 shrink-0 group-hover:hidden">
           {formatBytes(sourceFile.file_size)}
         </span>
-        <div className="overflow-hidden max-w-0 group-hover:max-w-[100px] transition-[max-width] duration-150 shrink-0">
-          <div className="flex items-center gap-0.5 pl-1">
-            {THUMBNAIL_TYPES.has(sourceFile.file_type) && (
-              <ThumbnailBtn onClick={onSetThumbnail} busy={thumbBusy} />
-            )}
-            <DownloadBtn file={sourceFile} />
-            <DeleteBtn onDelete={() => onDelete(sourceFile.id)} />
-          </div>
+        <div className="flex items-center gap-0.5 pl-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-100 shrink-0">
+          {THUMBNAIL_TYPES.has(sourceFile.file_type) && (
+            <ThumbnailBtn onClick={onSetThumbnail} busy={thumbBusy} />
+          )}
+          <DownloadBtn file={sourceFile} />
+          <DeleteBtn onDelete={() => onDelete(sourceFile.id)} />
         </div>
       </div>
 
