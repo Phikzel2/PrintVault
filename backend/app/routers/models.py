@@ -16,6 +16,7 @@ router = APIRouter(prefix="/models", tags=["models"])
 
 
 def prune_orphan_tags(db: Session) -> None:
+    db.flush()
     orphans = db.query(models.Tag).filter(~models.Tag.models.any()).all()
     for tag in orphans:
         db.delete(tag)
