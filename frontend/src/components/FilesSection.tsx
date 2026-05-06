@@ -163,8 +163,30 @@ function GcodeRow({
           </span>
         )}
         <span className="text-xs text-gray-600 shrink-0 group-hover:hidden">{formatBytes(file.file_size)}</span>
-        <div className="overflow-hidden max-w-0 group-hover:max-w-[100px] transition-[max-width] duration-150 shrink-0">
+        <div className="overflow-hidden max-w-0 group-hover:max-w-[130px] transition-[max-width] duration-150 shrink-0">
           <div className="flex items-center gap-0.5 pl-1">
+            {canSend && (
+              <button
+                onClick={handleSend}
+                disabled={sendState === "sending"}
+                title={`Send to ${assignedPrinter!.name}`}
+                className={`btn-ghost p-1.5 rounded shrink-0 disabled:opacity-40 ${
+                  sendState === "ok" ? "text-green-400" : sendState === "error" ? "text-red-400" : "text-gray-500 hover:text-brand-400"
+                }`}
+              >
+                {sendState === "sending" ? (
+                  <span className="w-4 h-4 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin block" />
+                ) : sendState === "ok" ? (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                )}
+              </button>
+            )}
             <DownloadBtn file={file} />
             <DeleteBtn onDelete={() => onDelete(file.id)} />
             {printers.length > 0 && (
@@ -194,31 +216,9 @@ function GcodeRow({
             <option value="">No printer</option>
             {printers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          {canSend && (
-            <button
-              onClick={handleSend}
-              disabled={sendState === "sending"}
-              title={`Send to ${assignedPrinter!.name}`}
-              className={`btn-ghost p-1.5 rounded shrink-0 disabled:opacity-40 ${
-                sendState === "ok" ? "text-green-400" : sendState === "error" ? "text-red-400" : "text-gray-500 hover:text-brand-400"
-              }`}
-            >
-              {sendState === "sending" ? (
-                <span className="w-4 h-4 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin block" />
-              ) : sendState === "ok" ? (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-              )}
-            </button>
-          )}
         </div>
       )}
-      {showPrinter && sendState === "error" && (
+      {sendState === "error" && (
         <p className="pl-5 text-xs text-red-400">{sendError}</p>
       )}
     </div>
