@@ -149,7 +149,7 @@ function GcodeRow({
         isDragging ? "opacity-40" : "hover:bg-gray-800/60 cursor-grab active:cursor-grabbing"
       }`}
     >
-      <div className="flex items-center gap-2 select-none relative">
+      <div className="flex items-center gap-2 select-none">
         <svg className="w-3.5 h-3.5 text-gray-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path d="M7 2a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zM17 2a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
@@ -158,13 +158,13 @@ function GcodeRow({
           {file.original_filename}
         </span>
         {!showPrinter && assignedPrinter && (
-          <span className="text-xs text-gray-500 shrink-0 max-w-[72px] truncate group-hover:opacity-0 transition-opacity" title={assignedPrinter.name}>
+          <span className="text-xs text-gray-500 shrink-0 max-w-[72px] truncate group-hover:hidden" title={assignedPrinter.name}>
             {assignedPrinter.name}
           </span>
         )}
-        <span className="text-xs text-gray-600 shrink-0 group-hover:opacity-0 transition-opacity">{formatBytes(file.file_size)}</span>
-        <div className="absolute right-0 inset-y-0 flex items-center pr-1.5 pl-8 bg-gradient-to-l from-gray-900 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="flex items-center gap-0.5">
+        <span className="text-xs text-gray-600 shrink-0 group-hover:hidden">{formatBytes(file.file_size)}</span>
+        <div className="overflow-hidden max-w-0 group-hover:max-w-[100px] transition-[max-width] duration-150 shrink-0">
+          <div className="flex items-center gap-0.5 pl-1">
             <DownloadBtn file={file} />
             <DeleteBtn onDelete={() => onDelete(file.id)} />
             {printers.length > 0 && (
@@ -273,7 +273,7 @@ function SourceGroup({
       }`}
     >
       {/* Source file header */}
-      <div className="flex items-center gap-2 px-2 py-2 select-none group relative">
+      <div className="flex items-center gap-2 px-2 py-2 select-none group">
         <button
           onClick={onToggle}
           className="btn-ghost p-1 rounded shrink-0 text-gray-500 flex items-center gap-1"
@@ -292,11 +292,11 @@ function SourceGroup({
         <span className="text-sm text-gray-200 flex-1 min-w-0 truncate font-medium" title={sourceFile.original_filename}>
           {sourceFile.original_filename}
         </span>
-        <span className="text-xs text-gray-600 shrink-0 group-hover:opacity-0 transition-opacity">
+        <span className="text-xs text-gray-600 shrink-0 group-hover:hidden">
           {formatBytes(sourceFile.file_size)}
         </span>
-        <div className="absolute right-0 inset-y-0 flex items-center pr-1.5 pl-8 bg-gradient-to-l from-gray-900 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="flex items-center gap-0.5">
+        <div className="overflow-hidden max-w-0 group-hover:max-w-[100px] transition-[max-width] duration-150 shrink-0">
+          <div className="flex items-center gap-0.5 pl-1">
             {THUMBNAIL_TYPES.has(sourceFile.file_type) && (
               <ThumbnailBtn onClick={onSetThumbnail} busy={thumbBusy} />
             )}
