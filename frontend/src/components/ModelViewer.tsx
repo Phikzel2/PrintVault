@@ -62,13 +62,10 @@ function SlicerButton({ fileId }: { fileId: number }) {
         onClick={() => active ? launch(active) : setOpen((v) => !v)}
         className="flex items-center gap-1.5 text-xs bg-gray-900/80 hover:bg-gray-800 border border-gray-700 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-l-lg transition-colors backdrop-blur-sm"
       >
-        {active ? (
-          <SlicerIcon slicer={active} />
-        ) : (
-          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
-        )}
+        <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+        {active && <SlicerIcon slicer={active} />}
         {active ? active.name : "Open in slicer"}
       </button>
       <button
