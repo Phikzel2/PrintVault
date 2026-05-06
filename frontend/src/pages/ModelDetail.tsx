@@ -142,7 +142,7 @@ export function ModelDetail() {
         </div>
 
         {/* Metadata panel */}
-        <div className="lg:w-[420px] flex flex-col gap-4 shrink-0 lg:overflow-y-auto lg:pb-2">
+        <div className="lg:w-[420px] flex flex-col gap-4 shrink-0 lg:min-h-0 lg:overflow-y-auto lg:pb-2">
           {/* Header */}
           <div className="card p-4 overflow-hidden">
             {editing ? (
