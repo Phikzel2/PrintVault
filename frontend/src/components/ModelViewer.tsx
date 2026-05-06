@@ -212,7 +212,7 @@ export function ModelViewer({ files }: ModelViewerProps) {
           </Canvas>
         )}
 
-        <SlicerButton fileId={activeFile.id} />
+        {activeFile && <SlicerButton fileId={activeFile.id} />}
         <div className="absolute bottom-3 right-3 text-xs text-gray-600 select-none pointer-events-none">
           Drag to rotate · Scroll to zoom
         </div>
