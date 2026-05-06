@@ -24,6 +24,7 @@ export function ModelDetail() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [visibilityBusy, setVisibilityBusy] = useState(false);
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const [lightbox, setLightbox] = useState(false);
 
   const canEdit = user && model ? (model.owner_id === user.id || user.is_admin) : false;
 
@@ -174,7 +175,8 @@ export function ModelDetail() {
                     <img
                       src={`${modelsApi.thumbnailUrl(modelId)}?v=${encodeURIComponent(model.thumbnail_path)}`}
                       alt={model.name}
-                      className="w-full h-auto"
+                      onClick={() => setLightbox(true)}
+                      className="w-full object-contain max-h-40 cursor-zoom-in"
                     />
                   </div>
                 )}
@@ -313,6 +315,19 @@ export function ModelDetail() {
             loadModel();
           }}
         />
+      )}
+
+      {lightbox && model.thumbnail_path && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-zoom-out"
+          onClick={() => setLightbox(false)}
+        >
+          <img
+            src={`${modelsApi.thumbnailUrl(modelId)}?v=${encodeURIComponent(model.thumbnail_path)}`}
+            alt={model.name}
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+          />
+        </div>
       )}
     </div>
   );
