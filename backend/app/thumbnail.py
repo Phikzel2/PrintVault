@@ -45,11 +45,6 @@ def generate_thumbnail(file_path: str, output_path: str) -> bool:
         if len(faces) == 0:
             return False
 
-        max_faces = 10_000
-        if len(faces) > max_faces:
-            idx = np.random.choice(len(faces), max_faces, replace=False)
-            faces, normals = faces[idx], normals[idx]
-
         # Center and normalize to [-1, 1]
         verts -= verts.mean(axis=0)
         scale = np.abs(verts).max()
@@ -68,6 +63,12 @@ def generate_thumbnail(file_path: str, output_path: str) -> bool:
         verts   = (R @ verts.T).T
         normals = (R @ normals.T).T
 
+        # Back-face culling: skip faces whose normal points away from camera (+Z axis)
+        front = normals[:, 2] > 0
+        faces, normals = faces[front], normals[front]
+        if len(faces) == 0:
+            return False
+
         # Orthographic projection
         W, H = 400, 300
         sx, sy = W * 0.82 / 2, H * 0.82 / 2
@@ -79,7 +80,7 @@ def generate_thumbnail(file_path: str, output_path: str) -> bool:
         light = np.array([0.5, 0.7, 1.0])
         light /= np.linalg.norm(light)
         diffuse = np.clip(normals @ light, 0, 1)
-        brightness = np.nan_to_num(0.25 + 0.75 * diffuse, nan=0.5)
+        brightness = np.nan_to_num(0.35 + 0.65 * diffuse, nan=0.5)
 
         # Z-buffer: for each pixel keep the colour of the nearest (highest z) face
         zbuf    = np.full((H, W), -np.inf, dtype=np.float64)
@@ -91,6 +92,10 @@ def generate_thumbnail(file_path: str, output_path: str) -> bool:
             x0, y0, z0 = px[f[0]], py[f[0]], pz[f[0]]
             x1, y1, z1 = px[f[1]], py[f[1]], pz[f[1]]
             x2, y2, z2 = px[f[2]], py[f[2]], pz[f[2]]
+
+            # Skip faces that are sub-pixel in screen space
+            if abs((x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0)) < 0.5:
+                continue
 
             xmin = max(0,     int(np.floor(min(x0, x1, x2))))
             xmax = min(W - 1, int(np.ceil( max(x0, x1, x2))))
