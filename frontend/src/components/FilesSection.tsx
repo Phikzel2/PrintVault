@@ -149,7 +149,7 @@ function GcodeRow({
         isDragging ? "opacity-40" : "hover:bg-gray-800/60 cursor-grab active:cursor-grabbing"
       }`}
     >
-      <div className="flex items-center gap-2 select-none">
+      <div className="flex items-center gap-2 select-none relative">
         <svg className="w-3.5 h-3.5 text-gray-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path d="M7 2a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zM17 2a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
@@ -163,7 +163,7 @@ function GcodeRow({
           </span>
         )}
         <span className="text-xs text-gray-600 shrink-0 group-hover:hidden">{formatBytes(file.file_size)}</span>
-        <div className="flex items-center gap-0.5 pl-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-100 shrink-0">
+        <div className="icon-cluster absolute right-0 inset-y-0 flex items-center gap-0.5 pr-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-100">
             {canSend && (
               <button
                 onClick={handleSend}
@@ -271,7 +271,7 @@ function SourceGroup({
       }`}
     >
       {/* Source file header */}
-      <div className="flex items-center gap-2 px-2 py-2 select-none group">
+      <div className="flex items-center gap-2 px-2 py-2 select-none group relative">
         <button
           onClick={onToggle}
           className="btn-ghost p-1 rounded shrink-0 text-gray-500 flex items-center gap-1"
@@ -293,7 +293,7 @@ function SourceGroup({
         <span className="text-xs text-gray-600 shrink-0 group-hover:hidden">
           {formatBytes(sourceFile.file_size)}
         </span>
-        <div className="flex items-center gap-0.5 pl-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-100 shrink-0">
+        <div className="icon-cluster absolute right-0 inset-y-0 flex items-center gap-0.5 pr-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-100">
           {THUMBNAIL_TYPES.has(sourceFile.file_type) && (
             <ThumbnailBtn onClick={onSetThumbnail} busy={thumbBusy} />
           )}

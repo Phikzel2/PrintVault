@@ -80,4 +80,8 @@
   [data-tooltip]:hover::after {
     opacity: 1;
   }
+
+  .icon-cluster {
+    box-shadow: -20px 0 10px 8px #111827;
+  }
 }
