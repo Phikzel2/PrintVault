@@ -252,7 +252,11 @@ def get_thumbnail(model_id: int, db: Session = Depends(get_db)):
     thumb_path = Path(settings.upload_dir) / "models" / str(model_id) / "thumbnail.jpg"
     if not thumb_path.exists():
         raise HTTPException(status_code=404, detail="No thumbnail")
-    return FileResponse(str(thumb_path), media_type="image/jpeg")
+    return FileResponse(
+        str(thumb_path),
+        media_type="image/jpeg",
+        headers={"Cache-Control": "max-age=31536000, immutable"},
+    )
 
 
 @router.post("/{model_id}/thumbnail", status_code=200)

@@ -19,7 +19,7 @@ function FileBadge({ label, count, color }: { label: string; count: number; colo
 
 export function ModelCard({ model }: ModelCardProps) {
   const { user } = useAuth();
-  const thumbUrl = model.thumbnail_path ? modelsApi.thumbnailUrl(model.id) : null;
+  const thumbUrl = model.thumbnail_path ?? null;
   const showPublicBadge = model.is_public;
 
   return (
