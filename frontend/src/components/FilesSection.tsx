@@ -149,7 +149,7 @@ function GcodeRow({
         isDragging ? "opacity-40" : "hover:bg-gray-800/60 cursor-grab active:cursor-grabbing"
       }`}
     >
-      <div className="flex items-center gap-2 select-none">
+      <div className="flex items-center gap-2 select-none relative">
         <svg className="w-3.5 h-3.5 text-gray-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path d="M7 2a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zM17 2a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
@@ -158,27 +158,30 @@ function GcodeRow({
           {file.original_filename}
         </span>
         {!showPrinter && assignedPrinter && (
-          <span className="text-xs text-gray-500 shrink-0 max-w-[72px] truncate" title={assignedPrinter.name}>
+          <span className="text-xs text-gray-500 shrink-0 max-w-[72px] truncate group-hover:opacity-0 transition-opacity" title={assignedPrinter.name}>
             {assignedPrinter.name}
           </span>
         )}
-        <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-          <DownloadBtn file={file} />
-          <DeleteBtn onDelete={() => onDelete(file.id)} />
-          {printers.length > 0 && (
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowPrinter((v) => !v); }}
-              className={`btn-ghost p-1 rounded shrink-0 ${showPrinter ? "text-gray-400" : "text-gray-600 hover:text-gray-400"}`}
-              title="Printer settings"
-            >
-              <svg
-                className={`w-3 h-3 transition-transform ${showPrinter ? "" : "-rotate-90"}`}
-                fill="currentColor" viewBox="0 0 20 20"
+        <span className="text-xs text-gray-600 shrink-0 group-hover:opacity-0 transition-opacity">{formatBytes(file.file_size)}</span>
+        <div className="absolute right-0 inset-y-0 flex items-center pr-1.5 pl-8 bg-gradient-to-l from-gray-900 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-0.5">
+            <DownloadBtn file={file} />
+            <DeleteBtn onDelete={() => onDelete(file.id)} />
+            {printers.length > 0 && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowPrinter((v) => !v); }}
+                className={`btn-ghost p-1 rounded shrink-0 ${showPrinter ? "text-gray-400" : "text-gray-600 hover:text-gray-400"}`}
+                title="Printer settings"
               >
-                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
-          )}
+                <svg
+                  className={`w-3 h-3 transition-transform ${showPrinter ? "" : "-rotate-90"}`}
+                  fill="currentColor" viewBox="0 0 20 20"
+                >
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
       </div>
       {showPrinter && printers.length > 0 && (
@@ -270,7 +273,7 @@ function SourceGroup({
       }`}
     >
       {/* Source file header */}
-      <div className="flex items-center gap-2 px-2 py-2 select-none group">
+      <div className="flex items-center gap-2 px-2 py-2 select-none group relative">
         <button
           onClick={onToggle}
           className="btn-ghost p-1 rounded shrink-0 text-gray-500 flex items-center gap-1"
@@ -289,15 +292,17 @@ function SourceGroup({
         <span className="text-sm text-gray-200 flex-1 min-w-0 truncate font-medium" title={sourceFile.original_filename}>
           {sourceFile.original_filename}
         </span>
-        {!isCollapsed && (
-          <span className="text-xs text-gray-600 shrink-0">{formatBytes(sourceFile.file_size)}</span>
-        )}
-        <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-          {THUMBNAIL_TYPES.has(sourceFile.file_type) && (
-            <ThumbnailBtn onClick={onSetThumbnail} busy={thumbBusy} />
-          )}
-          <DownloadBtn file={sourceFile} />
-          <DeleteBtn onDelete={() => onDelete(sourceFile.id)} />
+        <span className="text-xs text-gray-600 shrink-0 group-hover:opacity-0 transition-opacity">
+          {formatBytes(sourceFile.file_size)}
+        </span>
+        <div className="absolute right-0 inset-y-0 flex items-center pr-1.5 pl-8 bg-gradient-to-l from-gray-900 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-0.5">
+            {THUMBNAIL_TYPES.has(sourceFile.file_type) && (
+              <ThumbnailBtn onClick={onSetThumbnail} busy={thumbBusy} />
+            )}
+            <DownloadBtn file={sourceFile} />
+            <DeleteBtn onDelete={() => onDelete(sourceFile.id)} />
+          </div>
         </div>
       </div>
 
