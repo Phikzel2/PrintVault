@@ -114,6 +114,7 @@ function GcodeRow({
   onPrinterChange: (fileId: number, printerId: number | null) => void;
   onDelete: (id: number) => void;
 }) {
+  const [showPrinter, setShowPrinter] = useState(false);
   const [sendState, setSendState] = useState<SendState>("idle");
   const [sendError, setSendError] = useState("");
 
@@ -144,7 +145,7 @@ function GcodeRow({
         setTimeout(() => onDragStart(file.id), 0);
       }}
       onDragEnd={onDragEnd}
-      className={`flex flex-col gap-1 py-2 px-2 rounded-lg transition-opacity ${
+      className={`flex flex-col gap-1 py-1.5 px-2 rounded-lg transition-opacity ${
         isDragging ? "opacity-40" : "hover:bg-gray-800/60 cursor-grab active:cursor-grabbing"
       }`}
     >
@@ -153,15 +154,33 @@ function GcodeRow({
           <path d="M7 2a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zM17 2a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
         <TypeBadge type={file.file_type} />
-        <span className="text-sm text-gray-300 flex-1 truncate" title={file.original_filename}>
+        <span className="text-sm text-gray-300 flex-1 min-w-0 truncate" title={file.original_filename}>
           {file.original_filename}
         </span>
-        <span className="text-xs text-gray-600 shrink-0">{formatBytes(file.file_size)}</span>
+        {!showPrinter && assignedPrinter && (
+          <span className="text-xs text-gray-500 shrink-0 max-w-[72px] truncate" title={assignedPrinter.name}>
+            {assignedPrinter.name}
+          </span>
+        )}
         <DownloadBtn file={file} />
         <DeleteBtn onDelete={() => onDelete(file.id)} />
+        {printers.length > 0 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowPrinter((v) => !v); }}
+            className={`btn-ghost p-1 rounded shrink-0 ${showPrinter ? "text-gray-400" : "text-gray-600 hover:text-gray-400"}`}
+            title="Printer settings"
+          >
+            <svg
+              className={`w-3 h-3 transition-transform ${showPrinter ? "" : "-rotate-90"}`}
+              fill="currentColor" viewBox="0 0 20 20"
+            >
+              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        )}
       </div>
-      {printers.length > 0 && (
-        <div className="pl-6 flex items-center gap-1">
+      {showPrinter && printers.length > 0 && (
+        <div className="pl-5 flex items-center gap-1">
           <select
             value={file.printer_id ?? ""}
             onChange={(e) => onPrinterChange(file.id, e.target.value ? Number(e.target.value) : null)}
@@ -194,8 +213,8 @@ function GcodeRow({
           )}
         </div>
       )}
-      {sendState === "error" && (
-        <p className="pl-6 text-xs text-red-400">{sendError}</p>
+      {showPrinter && sendState === "error" && (
+        <p className="pl-5 text-xs text-red-400">{sendError}</p>
       )}
     </div>
   );
@@ -252,7 +271,7 @@ function SourceGroup({
       <div className="flex items-center gap-2 px-2 py-2 select-none">
         <button
           onClick={onToggle}
-          className="btn-ghost p-1 rounded shrink-0 text-gray-500"
+          className="btn-ghost p-1 rounded shrink-0 text-gray-500 flex items-center gap-1"
         >
           <svg
             className={`w-3 h-3 transition-transform ${isCollapsed ? "-rotate-90" : ""}`}
@@ -260,14 +279,21 @@ function SourceGroup({
           >
             <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
           </svg>
+          {isCollapsed && gcodes.length > 0 && (
+            <span className="text-xs text-gray-600 font-normal tabular-nums">{gcodes.length}</span>
+          )}
         </button>
         <TypeBadge type={sourceFile.file_type} />
-        <span className="text-sm text-gray-200 flex-1 truncate font-medium" title={sourceFile.original_filename}>
+        <span className="text-sm text-gray-200 flex-1 min-w-0 truncate font-medium" title={sourceFile.original_filename}>
           {sourceFile.original_filename}
         </span>
-        <span className="text-xs text-gray-600 shrink-0">{formatBytes(sourceFile.file_size)}</span>
-        {gcodes.length > 0 && (
-          <span className="text-xs text-gray-600 shrink-0">{gcodes.length} gcode</span>
+        {!isCollapsed && (
+          <>
+            <span className="text-xs text-gray-600 shrink-0">{formatBytes(sourceFile.file_size)}</span>
+            {gcodes.length > 0 && (
+              <span className="text-xs text-gray-600 shrink-0">{gcodes.length} gcode</span>
+            )}
+          </>
         )}
         {THUMBNAIL_TYPES.has(sourceFile.file_type) && (
           <ThumbnailBtn onClick={onSetThumbnail} busy={thumbBusy} />
@@ -332,7 +358,7 @@ export function FilesSection({
   modelId, files, printers,
   onDelete, onPrinterChange, onSourceChange, onUploadSuccess, onAddFiles,
 }: FilesSectionProps) {
-  const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<number | "unlinked" | null>(null);
   const [externalDrag, setExternalDrag] = useState(false);
@@ -366,7 +392,7 @@ export function FilesSection({
   }
 
   const toggle = (id: number) =>
-    setCollapsed((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+    setExpanded((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
   const uploadFiles = async (fileList: File[], sourceFileId: number | null) => {
     if (!fileList.length) return;
@@ -486,7 +512,7 @@ export function FilesSection({
             gcodes={gcodesBySource[sf.id] ?? []}
             printers={printers}
             isDropTarget={dropTarget === sf.id}
-            isCollapsed={collapsed.has(sf.id)}
+            isCollapsed={!expanded.has(sf.id)}
             activeDrag={activeDrag}
             draggingId={draggingId}
             externalDrag={anyExternalDrag}
