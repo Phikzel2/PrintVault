@@ -82,6 +82,13 @@ export const modelsApi = {
   thumbnailUrl: (id: number) => `/api/models/${id}/thumbnail`,
   setThumbnail: (modelId: number, fileId: number) =>
     api.post(`/models/${modelId}/thumbnail`, null, { params: { file_id: fileId } }),
+  uploadThumbnailImage: (modelId: number, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api.post<{ thumbnail_path: string }>(`/models/${modelId}/thumbnail/upload`, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
 };
 
 export const printersApi = {
@@ -105,6 +112,7 @@ export const importApi = {
     license?: string | null;
     tags: string[];
     files: ImportFile[];
+    thumbnail_url?: string | null;
   }) => api.post<PrintModel>("/import/confirm", data),
 };
 

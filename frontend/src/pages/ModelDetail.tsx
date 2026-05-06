@@ -23,6 +23,7 @@ export function ModelDetail() {
   const [showAddFiles, setShowAddFiles] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [visibilityBusy, setVisibilityBusy] = useState(false);
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
 
   const canEdit = user && model ? (model.owner_id === user.id || user.is_admin) : false;
 
@@ -80,6 +81,21 @@ export function ModelDetail() {
     navigate("/");
   };
 
+  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setThumbnailUploading(true);
+    try {
+      await modelsApi.uploadThumbnailImage(modelId, file);
+      loadModel();
+    } catch {
+      // ignore
+    } finally {
+      setThumbnailUploading(false);
+      e.target.value = "";
+    }
+  };
+
   const toggleVisibility = async () => {
     if (!model) return;
     setVisibilityBusy(true);
@@ -121,8 +137,33 @@ export function ModelDetail() {
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* 3D Viewer */}
-        <div className="lg:flex-1 card overflow-hidden" style={{ minHeight: "420px" }}>
+        <div className="lg:flex-1 card overflow-hidden relative" style={{ minHeight: "420px" }}>
           <ModelViewer files={model.files} />
+          {canEdit && (
+            <>
+              <input
+                type="file"
+                id="thumb-upload"
+                accept="image/*"
+                className="hidden"
+                onChange={handleThumbnailUpload}
+              />
+              <label
+                htmlFor="thumb-upload"
+                className="absolute bottom-3 left-3 flex items-center gap-1.5 text-xs px-2.5 py-1.5 bg-gray-900/80 hover:bg-gray-800 text-gray-400 hover:text-gray-200 rounded-lg cursor-pointer transition-colors select-none"
+              >
+                {thumbnailUploading ? (
+                  <div className="w-3.5 h-3.5 border border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                )}
+                Set thumbnail
+              </label>
+            </>
+          )}
         </div>
 
         {/* Metadata panel */}

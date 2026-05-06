@@ -2,7 +2,7 @@ import math
 import os
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
@@ -289,6 +289,45 @@ def set_thumbnail(
     thumb_path = str(Path(settings.upload_dir) / "models" / str(model_id) / "thumbnail.jpg")
     if not generate_thumbnail(db_file.file_path, thumb_path):
         raise HTTPException(status_code=500, detail="Thumbnail generation failed")
+
+    model.thumbnail_path = f"/api/models/{model_id}/thumbnail?v={int(time.time())}"
+    db.commit()
+    return {"thumbnail_path": model.thumbnail_path}
+
+
+@router.post("/{model_id}/thumbnail/upload", status_code=200)
+async def upload_thumbnail_image(
+    model_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    import io
+    import time
+    from PIL import Image
+
+    model = db.query(models.PrintModel).filter(models.PrintModel.id == model_id).first()
+    if not model:
+        raise HTTPException(status_code=404, detail="Model not found")
+    if not can_edit(model, current_user):
+        raise HTTPException(status_code=403, detail="Access denied")
+    if not (file.content_type or "").startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Empty file")
+
+    try:
+        img = Image.open(io.BytesIO(content)).convert("RGB")
+        img.thumbnail((1200, 900))
+        thumb_path = Path(settings.upload_dir) / "models" / str(model_id) / "thumbnail.jpg"
+        thumb_path.parent.mkdir(parents=True, exist_ok=True)
+        buf = io.BytesIO()
+        img.save(buf, "JPEG", quality=85)
+        thumb_path.write_bytes(buf.getvalue())
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid image: {e}")
 
     model.thumbnail_path = f"/api/models/{model_id}/thumbnail?v={int(time.time())}"
     db.commit()

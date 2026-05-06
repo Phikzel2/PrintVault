@@ -53,6 +53,7 @@ export function ImportModal({ onClose }: Props) {
         license: preview.license,
         tags: preview.tags,
         files: preview.files.filter((_, i) => selected.has(i)),
+        thumbnail_url: preview.thumbnail_url,
       });
       onClose();
       navigate(`/models/${data.id}`);

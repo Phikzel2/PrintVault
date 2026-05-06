@@ -46,6 +46,7 @@ class ImportPreview(BaseModel):
     license: str | None = None
     tags: list[str] = []
     files: list[ImportFile] = []
+    thumbnail_url: str | None = None
 
 
 class PreviewRequest(BaseModel):
@@ -59,6 +60,7 @@ class ImportRequest(BaseModel):
     license: str | None = None
     tags: list[str] = []
     files: list[ImportFile]
+    thumbnail_url: str | None = None
 
 
 def _file_type(filename: str) -> str:
@@ -98,6 +100,7 @@ async def _fetch_thingiverse(thing_id: str) -> ImportPreview:
         for f in files_raw
         if f.get("download_url")
     ]
+    thumb_url = thing.get("thumbnail") or (thing.get("default_image") or {}).get("url")
     return ImportPreview(
         platform="Thingiverse",
         name=thing.get("name", f"Thing {thing_id}"),
@@ -106,6 +109,7 @@ async def _fetch_thingiverse(thing_id: str) -> ImportPreview:
         license=thing.get("license"),
         tags=[t["name"] for t in thing.get("tags", [])],
         files=files,
+        thumbnail_url=thumb_url or None,
     )
 
 
@@ -124,6 +128,7 @@ query PrintDetail($id: ID!) {
     id name description summary
     license { name }
     tags { name }
+    image { filePath }
     stls { id name fileSize }
     gcodes { id name fileSize }
     slas { id name fileSize }
@@ -183,6 +188,8 @@ async def _fetch_printables(model_id: str) -> ImportPreview:
 
     license_name = (p.get("license") or {}).get("name")
     description = p.get("description") or p.get("summary")
+    image_path = (p.get("image") or {}).get("filePath")
+    thumb_url = f"https://media.printables.com/{image_path}" if image_path else None
 
     return ImportPreview(
         platform="Printables",
@@ -192,6 +199,7 @@ async def _fetch_printables(model_id: str) -> ImportPreview:
         license=license_name,
         tags=[t["name"] for t in (p.get("tags") or [])],
         files=files,
+        thumbnail_url=thumb_url,
     )
 
 
@@ -258,6 +266,26 @@ async def confirm_import(
     thumbnail_set = False
 
     async with httpx.AsyncClient(timeout=120.0, follow_redirects=True) as client:
+        if data.thumbnail_url:
+            try:
+                import io
+                import time
+                from PIL import Image
+                r = await client.get(data.thumbnail_url)
+                if r.is_success and "image" in r.headers.get("content-type", ""):
+                    img = Image.open(io.BytesIO(r.content)).convert("RGB")
+                    img.thumbnail((1200, 900))
+                    thumb_path = Path(settings.upload_dir) / "models" / str(db_model.id) / "thumbnail.jpg"
+                    thumb_path.parent.mkdir(parents=True, exist_ok=True)
+                    buf = io.BytesIO()
+                    img.save(buf, "JPEG", quality=85)
+                    thumb_path.write_bytes(buf.getvalue())
+                    db_model.thumbnail_path = f"/api/models/{db_model.id}/thumbnail?v={int(time.time())}"
+                    db.commit()
+                    thumbnail_set = True
+            except Exception as e:
+                logger.warning("Could not download platform thumbnail: %s", e)
+
         for f in data.files:
             ext = Path(f.name).suffix.lower() or ".bin"
             unique_name = f"{uuid.uuid4().hex}{ext}"

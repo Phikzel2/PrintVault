@@ -106,4 +106,5 @@ export interface ImportPreview {
   license: string | null;
   tags: string[];
   files: ImportFile[];
+  thumbnail_url: string | null;
 }
