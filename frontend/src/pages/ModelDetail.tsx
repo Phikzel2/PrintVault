@@ -174,7 +174,7 @@ export function ModelDetail() {
                     <img
                       src={`${modelsApi.thumbnailUrl(modelId)}?v=${encodeURIComponent(model.thumbnail_path)}`}
                       alt={model.name}
-                      className="w-full object-cover max-h-56"
+                      className="w-full h-auto"
                     />
                   </div>
                 )}
