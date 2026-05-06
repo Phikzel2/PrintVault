@@ -162,22 +162,24 @@ function GcodeRow({
             {assignedPrinter.name}
           </span>
         )}
-        <DownloadBtn file={file} />
-        <DeleteBtn onDelete={() => onDelete(file.id)} />
-        {printers.length > 0 && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowPrinter((v) => !v); }}
-            className={`btn-ghost p-1 rounded shrink-0 ${showPrinter ? "text-gray-400" : "text-gray-600 hover:text-gray-400"}`}
-            title="Printer settings"
-          >
-            <svg
-              className={`w-3 h-3 transition-transform ${showPrinter ? "" : "-rotate-90"}`}
-              fill="currentColor" viewBox="0 0 20 20"
+        <div className="flex items-center gap-0.5 shrink-0">
+          <DownloadBtn file={file} />
+          <DeleteBtn onDelete={() => onDelete(file.id)} />
+          {printers.length > 0 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowPrinter((v) => !v); }}
+              className={`btn-ghost p-1 rounded shrink-0 ${showPrinter ? "text-gray-400" : "text-gray-600 hover:text-gray-400"}`}
+              title="Printer settings"
             >
-              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </button>
-        )}
+              <svg
+                className={`w-3 h-3 transition-transform ${showPrinter ? "" : "-rotate-90"}`}
+                fill="currentColor" viewBox="0 0 20 20"
+              >
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
       {showPrinter && printers.length > 0 && (
         <div className="pl-5 flex items-center gap-1">
@@ -290,11 +292,13 @@ function SourceGroup({
         {!isCollapsed && (
           <span className="text-xs text-gray-600 shrink-0">{formatBytes(sourceFile.file_size)}</span>
         )}
-        {THUMBNAIL_TYPES.has(sourceFile.file_type) && (
-          <ThumbnailBtn onClick={onSetThumbnail} busy={thumbBusy} />
-        )}
-        <DownloadBtn file={sourceFile} />
-        <DeleteBtn onDelete={() => onDelete(sourceFile.id)} />
+        <div className="flex items-center gap-0.5 shrink-0">
+          {THUMBNAIL_TYPES.has(sourceFile.file_type) && (
+            <ThumbnailBtn onClick={onSetThumbnail} busy={thumbBusy} />
+          )}
+          <DownloadBtn file={sourceFile} />
+          <DeleteBtn onDelete={() => onDelete(sourceFile.id)} />
+        </div>
       </div>
 
       {/* Drop hint — shared for internal drag and Finder drop */}
