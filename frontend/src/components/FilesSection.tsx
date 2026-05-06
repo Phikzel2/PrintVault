@@ -145,7 +145,7 @@ function GcodeRow({
         setTimeout(() => onDragStart(file.id), 0);
       }}
       onDragEnd={onDragEnd}
-      className={`flex flex-col gap-1 py-1.5 px-2 rounded-lg transition-opacity ${
+      className={`flex flex-col gap-1 py-1.5 px-2 rounded-lg transition-opacity group ${
         isDragging ? "opacity-40" : "hover:bg-gray-800/60 cursor-grab active:cursor-grabbing"
       }`}
     >
@@ -162,7 +162,7 @@ function GcodeRow({
             {assignedPrinter.name}
           </span>
         )}
-        <div className="flex items-center gap-0.5 shrink-0">
+        <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
           <DownloadBtn file={file} />
           <DeleteBtn onDelete={() => onDelete(file.id)} />
           {printers.length > 0 && (
@@ -270,7 +270,7 @@ function SourceGroup({
       }`}
     >
       {/* Source file header */}
-      <div className="flex items-center gap-2 px-2 py-2 select-none">
+      <div className="flex items-center gap-2 px-2 py-2 select-none group">
         <button
           onClick={onToggle}
           className="btn-ghost p-1 rounded shrink-0 text-gray-500 flex items-center gap-1"
@@ -292,7 +292,7 @@ function SourceGroup({
         {!isCollapsed && (
           <span className="text-xs text-gray-600 shrink-0">{formatBytes(sourceFile.file_size)}</span>
         )}
-        <div className="flex items-center gap-0.5 shrink-0">
+        <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
           {THUMBNAIL_TYPES.has(sourceFile.file_type) && (
             <ThumbnailBtn onClick={onSetThumbnail} busy={thumbBusy} />
           )}
