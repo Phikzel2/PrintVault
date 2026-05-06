@@ -288,12 +288,7 @@ function SourceGroup({
           {sourceFile.original_filename}
         </span>
         {!isCollapsed && (
-          <>
-            <span className="text-xs text-gray-600 shrink-0">{formatBytes(sourceFile.file_size)}</span>
-            {gcodes.length > 0 && (
-              <span className="text-xs text-gray-600 shrink-0">{gcodes.length} gcode</span>
-            )}
-          </>
+          <span className="text-xs text-gray-600 shrink-0">{formatBytes(sourceFile.file_size)}</span>
         )}
         {THUMBNAIL_TYPES.has(sourceFile.file_type) && (
           <ThumbnailBtn onClick={onSetThumbnail} busy={thumbBusy} />
