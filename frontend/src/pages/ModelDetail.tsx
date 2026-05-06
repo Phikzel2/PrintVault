@@ -144,7 +144,7 @@ export function ModelDetail() {
         {/* Metadata panel */}
         <div className="lg:w-[420px] flex flex-col gap-4 shrink-0">
           {/* Header */}
-          <div className="card p-4">
+          <div className="card p-4 overflow-hidden">
             {editing ? (
               <div className="flex flex-col gap-3">
                 <input className="input text-lg font-semibold" value={editData.name} onChange={(e) => setEditData({ ...editData, name: e.target.value })} />
@@ -169,6 +169,15 @@ export function ModelDetail() {
                     </button>
                   )}
                 </div>
+                {model.thumbnail_path && (
+                  <div className="mt-3 -mx-4 overflow-hidden rounded-none">
+                    <img
+                      src={`${modelsApi.thumbnailUrl(modelId)}?v=${encodeURIComponent(model.thumbnail_path)}`}
+                      alt={model.name}
+                      className="w-full object-cover max-h-56"
+                    />
+                  </div>
+                )}
                 {model.description && <p className="text-sm text-gray-400 mt-2">{model.description}</p>}
                 {model.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-3">
