@@ -50,7 +50,7 @@ function DownloadBtn({ file }: { file: ModelFile }) {
       href={filesApi.downloadUrl(file.id)}
       download={file.original_filename}
       className="btn-ghost p-1.5 rounded shrink-0"
-      title="Download"
+      data-tooltip="Download"
       onClick={(e) => e.stopPropagation()}
     >
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -67,7 +67,7 @@ function ThumbnailBtn({ onClick, busy }: { onClick: () => void; busy: boolean })
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       disabled={busy}
       className="btn-ghost p-1.5 rounded shrink-0 text-gray-500 hover:text-brand-400 disabled:opacity-40"
-      title="Use as thumbnail"
+      data-tooltip="Use as thumbnail"
     >
       {busy ? (
         <span className="w-4 h-4 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin block" />
@@ -88,7 +88,7 @@ function DeleteBtn({ onDelete }: { onDelete: () => void }) {
     <button
       onClick={(e) => { e.stopPropagation(); onDelete(); }}
       className="btn-ghost p-1.5 rounded shrink-0 text-red-500 hover:text-red-400"
-      title="Delete"
+      data-tooltip="Delete"
     >
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -169,7 +169,7 @@ function GcodeRow({
               <button
                 onClick={handleSend}
                 disabled={sendState === "sending"}
-                title={`Send to ${assignedPrinter!.name}`}
+                data-tooltip={`Send to ${assignedPrinter!.name}`}
                 className={`btn-ghost p-1.5 rounded shrink-0 disabled:opacity-40 ${
                   sendState === "ok" ? "text-green-400" : sendState === "error" ? "text-red-400" : "text-gray-500 hover:text-brand-400"
                 }`}
@@ -193,7 +193,7 @@ function GcodeRow({
               <button
                 onClick={(e) => { e.stopPropagation(); setShowPrinter((v) => !v); }}
                 className={`btn-ghost p-1 rounded shrink-0 ${showPrinter ? "text-gray-400" : "text-gray-600 hover:text-gray-400"}`}
-                title="Printer settings"
+                data-tooltip="Printer settings"
               >
                 <svg
                   className={`w-3 h-3 transition-transform ${showPrinter ? "" : "-rotate-90"}`}
