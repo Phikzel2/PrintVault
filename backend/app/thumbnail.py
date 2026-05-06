@@ -69,11 +69,11 @@ def generate_thumbnail(file_path: str, output_path: str) -> bool:
         if len(faces) == 0:
             return False
 
-        # Orthographic projection
+        # Orthographic projection — uniform scale so model isn't squished
         W, H = 400, 300
-        sx, sy = W * 0.82 / 2, H * 0.82 / 2
-        px = verts[:, 0] * sx + W / 2
-        py = -verts[:, 1] * sy + H / 2
+        s = min(W, H) * 0.82 / 2
+        px = verts[:, 0] * s + W / 2
+        py = -verts[:, 1] * s + H / 2
         pz = verts[:, 2]
 
         # Lambertian shading per face
