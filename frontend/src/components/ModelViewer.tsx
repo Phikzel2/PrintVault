@@ -76,7 +76,9 @@ export function ModelViewer({ files }: ModelViewerProps) {
     );
   }
 
-  const fileUrl = activeFile ? filesApi.downloadUrl(activeFile.id) : null;
+  const fileUrl = activeFile
+    ? `${filesApi.downloadUrl(activeFile.id)}?s=${activeFile.file_size ?? 0}`
+    : null;
 
   return (
     <div className="w-full h-full flex flex-col">
@@ -114,9 +116,9 @@ export function ModelViewer({ files }: ModelViewerProps) {
             <Bounds fit clip observe margin={1.2}>
               <Suspense fallback={<Loader />}>
                 {activeFile.file_type === "STL" ? (
-                  <STLModel key={activeFile.id} url={fileUrl} />
+                  <STLModel key={fileUrl} url={fileUrl} />
                 ) : (
-                  <ThreeMFModel key={activeFile.id} url={fileUrl} />
+                  <ThreeMFModel key={fileUrl} url={fileUrl} />
                 )}
               </Suspense>
             </Bounds>
