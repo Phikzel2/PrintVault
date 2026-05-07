@@ -143,7 +143,7 @@ export function ModelDetail() {
         </div>
 
         {/* Metadata panel — scrolls internally on desktop */}
-        <div className="lg:w-[420px] flex flex-col gap-4 shrink-0 lg:overflow-y-auto">
+        <div className="lg:w-[420px] flex flex-col gap-4 shrink-0 lg:overflow-y-auto lg:min-h-0">
           {/* Header */}
           <div className="card p-4 overflow-hidden">
             {editing ? (
