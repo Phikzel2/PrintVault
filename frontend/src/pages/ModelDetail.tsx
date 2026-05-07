@@ -126,8 +126,8 @@ export function ModelDetail() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="mb-4">
+    <div className="max-w-7xl mx-auto px-4 lg:flex lg:flex-col lg:h-[calc(100vh-4rem)]">
+      <div className="pt-6 pb-4 shrink-0">
         <Link to="/" className="text-sm text-gray-500 hover:text-gray-300 flex items-center gap-1">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -136,14 +136,14 @@ export function ModelDetail() {
         </Link>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 lg:items-start">
-        {/* 3D Viewer — sticky so it stays in view while sidebar scrolls */}
-        <div className="lg:flex-1 card overflow-hidden min-h-[320px] lg:sticky lg:top-[5.5rem] lg:h-[calc(100vh-7rem)]">
+      <div className="flex flex-col lg:flex-row gap-6 pb-6 lg:flex-1 lg:min-h-0">
+        {/* 3D Viewer — fills remaining viewport height */}
+        <div className="lg:flex-1 card overflow-hidden min-h-[320px]">
           <ModelViewer files={model.files} />
         </div>
 
-        {/* Metadata panel — natural height, page scrolls */}
-        <div className="lg:w-[420px] flex flex-col gap-4 shrink-0">
+        {/* Metadata panel — scrolls internally on desktop */}
+        <div className="lg:w-[420px] flex flex-col gap-4 shrink-0 lg:overflow-y-auto">
           {/* Header */}
           <div className="card p-4 overflow-hidden">
             {editing ? (
