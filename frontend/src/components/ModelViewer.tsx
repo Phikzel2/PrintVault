@@ -12,6 +12,7 @@ const SLICERS = [
   { id: "bambu", name: "Bambu Studio", scheme: "bambustudio" },
   { id: "prusa", name: "PrusaSlicer",  scheme: "prusaslicer" },
   { id: "super", name: "SuperSlicer",  scheme: "superslicer" },
+  { id: "cura",  name: "Ultimaker Cura", scheme: "cura" },
 ] as const;
 
 function SlicerIcon({ id }: { id: string }) {
@@ -48,6 +49,12 @@ function SlicerIcon({ id }: { id: string }) {
         <circle cx="400" cy="400" r="400" fill="#fff"/>
         <path d="M599.3,186.8c-93.9-93.9-246.1-93.9-340,0s-93.9,246.1,0,340Z" fill="#363636"/>
         <path d="M202.7,612.5c93.9,93.9,246.1,93.9,340,0s93.9-246.1,0-340" fill="#2172eb"/>
+      </svg>
+    );
+    case "cura": return (
+      <svg viewBox="0 0 100 100" className={cls}>
+        <path d="M28,2 L72,2 L98,28 L98,72 L72,98 L28,98 L2,72 L2,28 Z" fill="#1473E6"/>
+        <path d="M67,30 A24,24 0 1,0 67,70 L57,70 A14,14 0 1,1 57,30 Z" fill="white"/>
       </svg>
     );
     default: return null;
