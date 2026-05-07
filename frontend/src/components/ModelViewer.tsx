@@ -8,21 +8,50 @@ import type { ModelFile } from "../types";
 import { filesApi } from "../api/client";
 
 const SLICERS = [
-  { id: "orca",  name: "Orca Slicer",  scheme: "orcaslicer",  color: "#7C3AED" },
-  { id: "bambu", name: "Bambu Studio", scheme: "bambustudio", color: "#16A34A" },
-  { id: "prusa", name: "PrusaSlicer",  scheme: "prusaslicer",  color: "#EA580C" },
-  { id: "super", name: "SuperSlicer",  scheme: "superslicer",  color: "#2563EB" },
+  { id: "orca",  name: "Orca Slicer",  scheme: "orcaslicer" },
+  { id: "bambu", name: "Bambu Studio", scheme: "bambustudio" },
+  { id: "prusa", name: "PrusaSlicer",  scheme: "prusaslicer" },
+  { id: "super", name: "SuperSlicer",  scheme: "superslicer" },
 ] as const;
 
-function SlicerIcon({ slicer }: { slicer: typeof SLICERS[number] }) {
-  return (
-    <span
-      className="w-4 h-4 rounded text-[9px] font-black flex items-center justify-center shrink-0 text-white leading-none select-none"
-      style={{ backgroundColor: slicer.color }}
-    >
-      {slicer.name[0]}
-    </span>
-  );
+function SlicerIcon({ id }: { id: string }) {
+  const cls = "w-4 h-4 shrink-0";
+  switch (id) {
+    case "orca": return (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" className={cls}>
+        <rect width="64" height="64" rx="14" fill="#e9e9e9"/>
+        <path d="M13.84,50.354a19.7,19.7,0,0,0,13.883,5.79A19.944,19.944,0,0,0,41.858,22.182Z" fill="#292826"/>
+        <path d="M41.858,22.181,13.84,50.354l.061.059A220.548,220.548,0,0,0,46.378,29.277a19.964,19.964,0,0,0-4.52-7.1" fill="#009789"/>
+        <path d="M36.381,7.856A19.943,19.943,0,0,0,22.327,41.818L50.345,13.646a19.693,19.693,0,0,0-13.964-5.79" fill="#292826"/>
+        <path d="M36.381,7.856A19.636,19.636,0,0,0,26.04,10.782a22.742,22.742,0,0,0-5.91-.745,23.084,23.084,0,0,0-9.477,2.124.632.632,0,0,0,.129,1.191,13.52,13.52,0,0,1,8.069,5.137A20.06,20.06,0,0,0,17.41,33.534a19.873,19.873,0,0,1,2-3.488c1.819-2.5,3.743-3.8,6.585-5.723,2.093-1.416,5-3.077,13.359-6.512a28.421,28.421,0,0,0,6.12-2.821c1.4-.831,2.461-1.615,2.8-2.842.024-.086.045-.172.065-.256A19.655,19.655,0,0,0,36.381,7.856" fill="#262523"/>
+        <path d="M39.69,14.551c.727,1.285-.728,3.495-3.249,4.937s-5.154,1.569-5.88.284.727-3.495,3.248-4.937,5.154-1.569,5.881-.284" fill="#fff"/>
+      </svg>
+    );
+    case "bambu": return (
+      <svg viewBox="0 0 128 128" className={cls}>
+        <path d="M99.7586 128H28.2414C12.6464 128 0 115.354 0 99.7586V28.2414C0 12.6464 12.6464 0 28.2414 0H99.7586C115.354 0 128 12.6464 128 28.2414V99.7586C128 115.354 115.354 128 99.7586 128Z" fill="#00AE42"/>
+        <path d="M65.7826 54.5925V101.264H92.3441V65.0528L65.7826 54.5925Z" fill="white"/>
+        <path d="M65.7826 26.7924V50.1337L92.3441 60.5939V26.7924H65.7826Z" fill="white"/>
+        <path d="M35.0999 73.4637V26.7924H61.6615V63.0147L35.0999 73.4637Z" fill="white"/>
+        <path d="M35.0999 101.264V77.9339L61.6615 67.4736V101.264H35.0999Z" fill="white"/>
+      </svg>
+    );
+    case "prusa": return (
+      <svg viewBox="0 0 800 800" className={cls}>
+        <circle cx="400" cy="400" r="400" fill="#fff"/>
+        <path d="M599.3,186.8c-93.9-93.9-246.1-93.9-340,0s-93.9,246.1,0,340Z" fill="#363636"/>
+        <path d="M202.7,612.5c93.9,93.9,246.1,93.9,340,0s93.9-246.1,0-340" fill="#ed6b21"/>
+      </svg>
+    );
+    case "super": return (
+      <svg viewBox="0 0 800 800" className={cls}>
+        <circle cx="400" cy="400" r="400" fill="#fff"/>
+        <path d="M599.3,186.8c-93.9-93.9-246.1-93.9-340,0s-93.9,246.1,0,340Z" fill="#363636"/>
+        <path d="M202.7,612.5c93.9,93.9,246.1,93.9,340,0s93.9-246.1,0-340" fill="#2172eb"/>
+      </svg>
+    );
+    default: return null;
+  }
 }
 
 type SlicerId = typeof SLICERS[number]["id"];
@@ -65,7 +94,7 @@ function SlicerButton({ fileId }: { fileId: number }) {
         <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
         </svg>
-        {active && <SlicerIcon slicer={active} />}
+        {active && <SlicerIcon id={active.id} />}
         {active ? active.name : "Open in slicer"}
       </button>
       <button
@@ -89,7 +118,7 @@ function SlicerButton({ fileId }: { fileId: number }) {
                   : "text-gray-300 hover:bg-gray-800 hover:text-white"
               }`}
             >
-              <SlicerIcon slicer={s} />
+              <SlicerIcon id={s.id} />
               {s.name}
             </button>
           ))}
