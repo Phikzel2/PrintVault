@@ -152,7 +152,8 @@ function Loader() {
 function FitOnLoad() {
   const bounds = useBounds();
   useEffect(() => {
-    bounds.refresh().fit();
+    const id = requestAnimationFrame(() => bounds.refresh().fit());
+    return () => cancelAnimationFrame(id);
   }, [bounds]);
   return null;
 }
@@ -243,7 +244,7 @@ export function ModelViewer({ files }: ModelViewerProps) {
             <directionalLight position={[5, 8, 5]} intensity={1.5} castShadow />
             <directionalLight position={[-5, 2, -5]} intensity={0.3} />
 
-            <Bounds clip observe margin={1.2}>
+            <Bounds clip margin={1.2}>
               <Suspense fallback={<Loader />}>
                 {activeFile.file_type === "STL" ? (
                   <STLModel key={fileUrl} url={fileUrl} />
