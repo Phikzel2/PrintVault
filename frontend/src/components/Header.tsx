@@ -117,6 +117,11 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
     refreshSuggestions(value, selectionStart ?? value.length);
   };
 
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (["ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(e.key)) return;
+    handleCursorMove(e);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!dropdownOpen) return;
     switch (e.key) {
@@ -172,7 +177,7 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             onClick={handleCursorMove}
-            onKeyUp={handleCursorMove}
+            onKeyUp={handleKeyUp}
             className="input text-sm"
           />
           {dropdownOpen && (
