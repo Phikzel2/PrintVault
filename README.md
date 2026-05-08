@@ -11,7 +11,10 @@ A self-hosted 3D print file library — your personal alternative to Printables,
 - **File support** — STL, 3MF, GCODE, OBJ, STEP, AMF
 - **Moonraker integration** — push GCODE files directly to a Klipper printer via Moonraker
 - **Printer profiles** — define printers (brand, build volume, Moonraker URL) and link GCODE files
-- **Tags & search** — tag models and filter by tag, file type, visibility, or keyword
+- **Tags & search** — tag models and filter by tag, file type, or visibility; search bar supports keyword and `#tag` syntax with live autocomplete
+- **Open in slicer** — one-click open of STL/3MF files in OrcaSlicer, Bambu Studio, PrusaSlicer, SuperSlicer, or Ultimaker Cura
+- **Light / dark mode** — toggle in the header, preference persisted in localStorage
+- **Mobile-friendly** — responsive layout with a collapsible search bar on small screens
 - **Source tracking** — store the original URL and license for each model
 - **Import from URL** — paste a Printables or Thingiverse model URL to preview and import files directly into your library
 - **Settings** — per-user date format preference; admins manage users from the UI
@@ -151,9 +154,11 @@ Once a printer has a **Moonraker URL**, a send button appears next to any GCODE 
 
 ### Tags & Search
 
-- Use the search bar to filter by model name or description
-- Click a tag in the sidebar or on a model card to filter by tag
-- Combine with the **File Type** and **Visibility** filters for precise results
+- **Keyword search** — type any text and press Enter to search model names
+- **Tag search** — type `#` in the search bar to get a live autocomplete dropdown of your tags; select one to filter immediately. Example: `mounting plate #functional` searches titles for "mounting plate" and filters by the "functional" tag
+- **Multiple tags** — combine tags in one query: `#functional #enclosureparts`
+- **Sidebar filters** — click any tag, file type, or visibility filter; the search bar stays in sync with the active filters
+- Combine all filters freely for precise results
 
 ### Settings
 
@@ -195,7 +200,7 @@ PrintVault/
 │   └── src/
 │       ├── pages/            # Home · ModelDetail · Printers · Settings
 │       ├── components/       # Header · ModelCard · FilesSection · ModelViewer · Modals
-│       ├── context/          # AuthContext (JWT + user state)
+│       ├── context/          # AuthContext (JWT + user state) · ThemeContext (light/dark)
 │       ├── api/client.ts     # Axios client with Bearer interceptor
 │       └── types/index.ts    # Shared TypeScript interfaces
 ├── .env.example              # Environment variable reference
