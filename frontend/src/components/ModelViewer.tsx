@@ -243,7 +243,7 @@ export function ModelViewer({ files }: ModelViewerProps) {
             <directionalLight position={[5, 8, 5]} intensity={1.5} castShadow />
             <directionalLight position={[-5, 2, -5]} intensity={0.3} />
 
-            <Bounds fit clip observe margin={1.2}>
+            <Bounds clip observe margin={1.2}>
               <Suspense fallback={<Loader />}>
                 {activeFile.file_type === "STL" ? (
                   <STLModel key={fileUrl} url={fileUrl} />
