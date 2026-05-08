@@ -70,7 +70,11 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   useEffect(() => { fetchTags(); }, []);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 10);
+    const onScroll = () => {
+      const isScrolled = window.scrollY > 10;
+      setScrolled(isScrolled);
+      if (isScrolled) setDropdownOpen(false);
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -252,7 +256,7 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Add Model
+              <span className="hidden sm:inline">Add Model</span>
             </button>
           )}
 
@@ -315,15 +319,17 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
         </nav>
       </div>
 
-      {/* Row 2 — mobile search bar, disappears when scrolled */}
-      {!scrolled && (
-        <div className="md:hidden border-t border-gray-200 dark:border-gray-800 px-4 py-2">
+      {/* Row 2 — mobile search bar, fades + slides up when scrolled */}
+      <div className={`md:hidden overflow-hidden transition-all duration-200 ease-in-out border-t border-gray-200 dark:border-gray-800 ${
+        scrolled ? "max-h-0 opacity-0" : "max-h-20 opacity-100"
+      }`}>
+        <div className="px-4 py-2">
           <form ref={mobileFormRef} onSubmit={handleSubmit} className="relative">
             <input ref={mobileInputRef} {...sharedInputProps} className="input text-base" />
             {dropdownOpen && <Dropdown />}
           </form>
         </div>
-      )}
+      </div>
 
     </header>
   );
