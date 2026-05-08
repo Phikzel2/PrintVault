@@ -84,7 +84,6 @@ export function Home() {
 
   return (
     <div
-      className="min-h-screen"
       onDragEnter={handlePageDragEnter}
       onDragOver={handlePageDragOver}
       onDragLeave={handlePageDragLeave}
