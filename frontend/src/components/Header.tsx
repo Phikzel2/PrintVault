@@ -58,9 +58,9 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
     setSearch([text, ...tags.map(t => `#${t}`)].filter(Boolean).join(" "));
   }, [searchParams]);
 
-  useEffect(() => {
-    tagsApi.list().then(r => setAllTags(r.data)).catch(() => {});
-  }, []);
+  const fetchTags = () => tagsApi.list().then(r => setAllTags(r.data)).catch(() => {});
+
+  useEffect(() => { fetchTags(); }, []);
 
   // The native × clear button on type="search" fires a "search" event, not "change".
   // Detect it and immediately clear the filters.
@@ -186,6 +186,7 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
             value={search}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
+            onFocus={fetchTags}
             onClick={handleCursorMove}
             onKeyUp={handleKeyUp}
             className="input text-sm"
