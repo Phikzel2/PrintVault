@@ -39,11 +39,20 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
-  const inputRef = useRef<HTMLInputElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
+  // Two refs: one per form instance (desktop row 1 / mobile row 2)
+  const desktopInputRef = useRef<HTMLInputElement>(null);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
+  const desktopFormRef = useRef<HTMLFormElement>(null);
+  const mobileFormRef = useRef<HTMLFormElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const activeTokenRef = useRef<ReturnType<typeof getActiveToken>>(null);
+
+  const activeInput = () =>
+    window.matchMedia("(min-width: 768px)").matches
+      ? desktopInputRef.current
+      : mobileInputRef.current;
 
   const [search, setSearch] = useState(() => {
     const text = searchParams.get("search") ?? "";
@@ -51,7 +60,6 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
     return [text, ...tags.map(t => `#${t}`)].filter(Boolean).join(" ");
   });
 
-  // Sync input when URL changes (e.g. clicking a sidebar tag)
   useEffect(() => {
     const text = searchParams.get("search") ?? "";
     const tags = searchParams.getAll("tag");
@@ -59,27 +67,28 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   }, [searchParams]);
 
   const fetchTags = () => tagsApi.list().then(r => setAllTags(r.data)).catch(() => {});
-
   useEffect(() => { fetchTags(); }, []);
 
-  // The native × clear button on type="search" fires a "search" event, not "change".
-  // Detect it and immediately clear the filters.
   useEffect(() => {
-    const input = inputRef.current;
-    if (!input) return;
-    const handler = () => { if (input.value === "") navigate("/"); };
-    input.addEventListener("search", handler);
-    return () => input.removeEventListener("search", handler);
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Native × clear button fires "search" event, not "change" — handle both inputs
+  useEffect(() => {
+    const inputs = [desktopInputRef.current, mobileInputRef.current].filter(Boolean);
+    const handler = (e: Event) => { if ((e.target as HTMLInputElement).value === "") navigate("/"); };
+    inputs.forEach(i => i!.addEventListener("search", handler));
+    return () => inputs.forEach(i => i!.removeEventListener("search", handler));
   }, [navigate]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-      if (formRef.current && !formRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+      const inDesktop = desktopFormRef.current?.contains(e.target as Node);
+      const inMobile = mobileFormRef.current?.contains(e.target as Node);
+      if (!inDesktop && !inMobile) setDropdownOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -118,8 +127,9 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
 
     const newCursor = before.length + 1 + tag.name.length + 1;
     requestAnimationFrame(() => {
-      inputRef.current?.focus();
-      inputRef.current?.setSelectionRange(newCursor, newCursor);
+      const input = activeInput();
+      input?.focus();
+      input?.setSelectionRange(newCursor, newCursor);
     });
   };
 
@@ -175,8 +185,41 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
     navigate(qs ? `/?${qs}` : "/");
   };
 
+  const sharedInputProps = {
+    type: "search" as const,
+    placeholder: "Search titles or #tags…",
+    value: search,
+    onChange: handleChange,
+    onKeyDown: handleKeyDown,
+    onFocus: fetchTags,
+    onClick: handleCursorMove,
+    onKeyUp: handleKeyUp,
+  };
+
+  const Dropdown = () => (
+    <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl py-1 z-50">
+      {suggestions.map((tag, i) => (
+        <button
+          key={tag.id}
+          type="button"
+          onMouseDown={(e) => { e.preventDefault(); selectSuggestion(tag); }}
+          className={`w-full text-left px-4 py-3 md:px-3 md:py-1.5 text-base md:text-sm flex items-center gap-2 transition-colors ${
+            i === highlighted
+              ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+              : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+          }`}
+        >
+          <span className="text-brand-500 font-medium">#</span>
+          {tag.name}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
+
+      {/* Row 1 — always visible on all screen sizes */}
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-4">
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <svg className="w-8 h-8 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -185,41 +228,14 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
           <span className="font-bold text-lg text-gray-900 dark:text-white hidden sm:block">PrintVault</span>
         </Link>
 
-        <form ref={formRef} onSubmit={handleSubmit} className="flex-1 max-w-xl relative">
-          <input
-            ref={inputRef}
-            type="search"
-            placeholder="Search titles or #tags…"
-            value={search}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            onFocus={fetchTags}
-            onClick={handleCursorMove}
-            onKeyUp={handleKeyUp}
-            className="input text-sm"
-          />
-          {dropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl py-1 z-50">
-              {suggestions.map((tag, i) => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onMouseDown={(e) => { e.preventDefault(); selectSuggestion(tag); }}
-                  className={`w-full text-left px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
-                    i === highlighted
-                      ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  }`}
-                >
-                  <span className="text-brand-500 font-medium">#</span>
-                  {tag.name}
-                </button>
-              ))}
-            </div>
-          )}
+        {/* Desktop search — hidden on mobile */}
+        <form ref={desktopFormRef} onSubmit={handleSubmit} className="hidden md:block flex-1 max-w-xl relative">
+          <input ref={desktopInputRef} {...sharedInputProps} className="input text-sm" />
+          {dropdownOpen && <Dropdown />}
         </form>
 
-        <nav className="flex items-center gap-2 shrink-0">
+        {/* Nav — ml-auto pushes it right on mobile (no search bar in row 1) */}
+        <nav className="flex items-center gap-2 shrink-0 ml-auto md:ml-0">
           <Link to="/printers" className="btn-ghost text-sm px-3 py-2 rounded-lg">
             Printers
           </Link>
@@ -240,7 +256,6 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
             </button>
           )}
 
-          {/* Theme toggle */}
           <button
             onClick={toggleTheme}
             className="btn-ghost p-2 rounded-lg"
@@ -299,6 +314,17 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
           )}
         </nav>
       </div>
+
+      {/* Row 2 — mobile search bar, disappears when scrolled */}
+      {!scrolled && (
+        <div className="md:hidden border-t border-gray-200 dark:border-gray-800 px-4 py-2">
+          <form ref={mobileFormRef} onSubmit={handleSubmit} className="relative">
+            <input ref={mobileInputRef} {...sharedInputProps} className="input text-base" />
+            {dropdownOpen && <Dropdown />}
+          </form>
+        </div>
+      )}
+
     </header>
   );
 }
