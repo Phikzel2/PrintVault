@@ -1,35 +1,157 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { tagsApi } from "../api/client";
+import type { Tag } from "../types";
 
 interface HeaderProps {
   onAddModel?: () => void;
   onImport?: () => void;
 }
 
+function parseSearchInput(value: string): { text: string; tags: string[] } {
+  const tags: string[] = [];
+  const text = value
+    .replace(/#(\S+)/g, (_, t) => { tags.push(t.toLowerCase()); return ""; })
+    .replace(/\s+/g, " ")
+    .trim();
+  return { text, tags };
+}
+
+function getActiveToken(value: string, cursor: number) {
+  const before = value.slice(0, cursor);
+  const match = before.match(/#(\S*)$/);
+  if (!match) return null;
+  const start = cursor - match[0].length;
+  const rest = value.slice(cursor).match(/^\S*/)?.[0] ?? "";
+  return { partial: match[1] + rest, start, end: cursor + rest.length };
+}
+
 export function Header({ onAddModel, onImport }: HeaderProps) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [search, setSearch] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    navigate(`/?search=${encodeURIComponent(search)}`);
-  };
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [suggestions, setSuggestions] = useState<Tag[]>([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [highlighted, setHighlighted] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const activeTokenRef = useRef<ReturnType<typeof getActiveToken>>(null);
+
+  const [search, setSearch] = useState(() => {
+    const text = searchParams.get("search") ?? "";
+    const tags = searchParams.getAll("tag");
+    return [text, ...tags.map(t => `#${t}`)].filter(Boolean).join(" ");
+  });
+
+  // Sync input when URL changes (e.g. clicking a sidebar tag)
+  useEffect(() => {
+    const text = searchParams.get("search") ?? "";
+    const tags = searchParams.getAll("tag");
+    setSearch([text, ...tags.map(t => `#${t}`)].filter(Boolean).join(" "));
+  }, [searchParams]);
+
+  useEffect(() => {
+    tagsApi.list().then(r => setAllTags(r.data)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
+      if (formRef.current && !formRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  const refreshSuggestions = (value: string, cursor: number) => {
+    const token = getActiveToken(value, cursor);
+    activeTokenRef.current = token;
+    if (!token || !allTags.length) { setDropdownOpen(false); return; }
+    const filtered = allTags
+      .filter(t =>
+        t.name.toLowerCase().startsWith(token.partial.toLowerCase()) &&
+        t.name.toLowerCase() !== token.partial.toLowerCase()
+      )
+      .slice(0, 6);
+    setSuggestions(filtered);
+    setDropdownOpen(filtered.length > 0);
+    setHighlighted(0);
+  };
+
+  const selectSuggestion = (tag: Tag) => {
+    const token = activeTokenRef.current;
+    if (!token) return;
+    const before = search.slice(0, token.start);
+    const after = search.slice(token.end);
+    const suffix = after.startsWith(" ") || after === "" ? after : " " + after;
+    const newValue = (`${before}#${tag.name}${suffix}`).trimEnd() + " ";
+    setSearch(newValue);
+    setDropdownOpen(false);
+    const newCursor = before.length + 1 + tag.name.length + 1;
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange(newCursor, newCursor);
+    });
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value, selectionStart } = e.target;
+    setSearch(value);
+    refreshSuggestions(value, selectionStart ?? value.length);
+  };
+
+  const handleCursorMove = (e: React.SyntheticEvent<HTMLInputElement>) => {
+    const { value, selectionStart } = e.currentTarget;
+    refreshSuggestions(value, selectionStart ?? value.length);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!dropdownOpen) return;
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setHighlighted(i => Math.min(i + 1, suggestions.length - 1));
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setHighlighted(i => Math.max(i - 1, 0));
+        break;
+      case "Enter":
+        e.preventDefault();
+        selectSuggestion(suggestions[highlighted]);
+        break;
+      case "Tab":
+        e.preventDefault();
+        selectSuggestion(suggestions[highlighted]);
+        break;
+      case "Escape":
+        setDropdownOpen(false);
+        break;
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setDropdownOpen(false);
+    const { text, tags } = parseSearchInput(search);
+    const next = new URLSearchParams();
+    if (text) next.set("search", text);
+    tags.forEach(t => next.append("tag", t));
+    const qs = next.toString();
+    navigate(qs ? `/?${qs}` : "/");
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
@@ -41,14 +163,37 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
           <span className="font-bold text-lg text-gray-900 dark:text-white hidden sm:block">PrintVault</span>
         </Link>
 
-        <form onSubmit={handleSearch} className="flex-1 max-w-xl">
+        <form ref={formRef} onSubmit={handleSubmit} className="flex-1 max-w-xl relative">
           <input
+            ref={inputRef}
             type="search"
-            placeholder="Search models..."
+            placeholder="Search titles or #tags…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            onClick={handleCursorMove}
+            onKeyUp={handleCursorMove}
             className="input text-sm"
           />
+          {dropdownOpen && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl py-1 z-50">
+              {suggestions.map((tag, i) => (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); selectSuggestion(tag); }}
+                  className={`w-full text-left px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
+                    i === highlighted
+                      ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  }`}
+                >
+                  <span className="text-brand-500 font-medium">#</span>
+                  {tag.name}
+                </button>
+              ))}
+            </div>
+          )}
         </form>
 
         <nav className="flex items-center gap-2 shrink-0">

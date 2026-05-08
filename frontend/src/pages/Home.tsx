@@ -18,7 +18,8 @@ export function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const search = searchParams.get("search") ?? "";
-  const activeTag = searchParams.get("tag") ?? "";
+  const activeTags = searchParams.getAll("tag");
+  const activeTagsKey = activeTags.join(",");
   const activeType = searchParams.get("type") ?? "";
   const activeVisibility = searchParams.get("visibility") ?? "";
   const page = Number(searchParams.get("page") ?? "1");
@@ -37,7 +38,7 @@ export function Home() {
     try {
       const params: Record<string, any> = { page, page_size: 24 };
       if (search) params.search = search;
-      if (activeTag) params.tag = [activeTag];
+      if (activeTags.length) params.tag = activeTags;
       if (activeType) params.file_type = activeType;
       if (activeVisibility) params.visibility = activeVisibility;
       const { data } = await modelsApi.list(params);
@@ -47,7 +48,7 @@ export function Home() {
     } finally {
       setLoading(false);
     }
-  }, [search, activeTag, activeType, activeVisibility, page]);
+  }, [search, activeTagsKey, activeType, activeVisibility, page]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
@@ -149,15 +150,15 @@ export function Home() {
                 <div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
                   <button
                     onClick={() => setParam("tag", "")}
-                    className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${!activeTag ? "bg-brand-600/20 text-brand-400" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"}`}
+                    className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${!activeTags.length ? "bg-brand-600/20 text-brand-400" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"}`}
                   >
                     All tags
                   </button>
                   {tags.map((tag) => (
                     <button
                       key={tag.id}
-                      onClick={() => setParam("tag", tag.name === activeTag ? "" : tag.name)}
-                      className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${activeTag === tag.name ? "bg-brand-600/20 text-brand-400" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"}`}
+                      onClick={() => setParam("tag", activeTags.includes(tag.name) ? "" : tag.name)}
+                      className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${activeTags.includes(tag.name) ? "bg-brand-600/20 text-brand-400" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"}`}
                     >
                       {tag.name}
                     </button>
