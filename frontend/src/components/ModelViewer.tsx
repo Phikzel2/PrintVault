@@ -6,6 +6,7 @@ import { ThreeMFLoader } from "three/examples/jsm/loaders/3MFLoader.js";
 import * as THREE from "three";
 import type { ModelFile } from "../types";
 import { filesApi } from "../api/client";
+import { useTheme } from "../context/ThemeContext";
 
 const SLICERS = [
   { id: "orca",  name: "Orca Slicer",  scheme: "orcaslicer" },
@@ -190,6 +191,7 @@ interface ModelViewerProps {
 }
 
 export function ModelViewer({ files }: ModelViewerProps) {
+  const { theme } = useTheme();
   const viewableFiles = files.filter((f) => f.file_type === "STL" || f.file_type === "3MF");
   const [activeFile, setActiveFile] = useState<ModelFile | null>(viewableFiles[0] ?? null);
 
@@ -236,7 +238,7 @@ export function ModelViewer({ files }: ModelViewerProps) {
             gl={{ antialias: true }}
             className="w-full h-full"
           >
-            <color attach="background" args={["#111827"]} />
+            <color attach="background" args={[theme === "light" ? "#f3f4f6" : "#111827"]} />
             <ambientLight intensity={0.4} />
             <directionalLight position={[5, 8, 5]} intensity={1.5} castShadow />
             <directionalLight position={[-5, 2, -5]} intensity={0.3} />
@@ -256,7 +258,7 @@ export function ModelViewer({ files }: ModelViewerProps) {
         )}
 
         {activeFile && <SlicerButton fileId={activeFile.id} />}
-        <div className="absolute bottom-3 right-3 text-xs text-gray-400 dark:text-gray-600 select-none pointer-events-none">
+        <div className="absolute bottom-3 right-3 text-xs text-gray-500 dark:text-gray-600 select-none pointer-events-none">
           Drag to rotate · Scroll to zoom
         </div>
       </div>
