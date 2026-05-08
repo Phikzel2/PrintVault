@@ -62,6 +62,16 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
     tagsApi.list().then(r => setAllTags(r.data)).catch(() => {});
   }, []);
 
+  // The native × clear button on type="search" fires a "search" event, not "change".
+  // Detect it and immediately clear the filters.
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    const handler = () => { if (input.value === "") navigate("/"); };
+    input.addEventListener("search", handler);
+    return () => input.removeEventListener("search", handler);
+  }, [navigate]);
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
