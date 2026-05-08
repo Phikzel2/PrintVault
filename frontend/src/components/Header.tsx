@@ -319,15 +319,20 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
         </nav>
       </div>
 
-      {/* Row 2 — mobile search bar, fades + slides up when scrolled */}
-      <div className={`md:hidden overflow-hidden transition-all duration-200 ease-in-out border-t border-gray-200 dark:border-gray-800 ${
-        scrolled ? "max-h-0 opacity-0" : "max-h-20 opacity-100"
+      {/* Row 2 — mobile search bar, fades + collapses when scrolled.
+          grid-template-rows animates height; overflow-hidden is on the inner
+          div only, so the absolute dropdown (whose containing block is the
+          form inside it) is never clipped. */}
+      <div className={`md:hidden grid transition-[grid-template-rows,opacity] duration-200 ease-in-out ${
+        scrolled ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
       }`}>
-        <div className="px-4 py-2">
-          <form ref={mobileFormRef} onSubmit={handleSubmit} className="relative">
-            <input ref={mobileInputRef} {...sharedInputProps} className="input text-base" />
-            {dropdownOpen && <Dropdown />}
-          </form>
+        <div className="overflow-hidden min-h-0">
+          <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-2">
+            <form ref={mobileFormRef} onSubmit={handleSubmit} className="relative">
+              <input ref={mobileInputRef} {...sharedInputProps} className="input text-base" />
+              {dropdownOpen && <Dropdown />}
+            </form>
+          </div>
         </div>
       </div>
 
