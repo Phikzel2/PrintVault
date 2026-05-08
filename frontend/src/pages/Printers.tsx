@@ -89,7 +89,7 @@ function PrinterForm({
         <div className="col-span-2">
           <label className="label">Moonraker URL</label>
           <input className="input" placeholder="http://192.168.1.100:7125" {...field("moonraker_url")} />
-          <p className="text-xs text-gray-600 mt-1">Required to push GCODE files directly to the printer (Klipper/Moonraker)</p>
+          <p className="text-xs text-gray-500 dark:text-gray-600 mt-1">Required to push GCODE files directly to the printer (Klipper/Moonraker)</p>
         </div>
         <div className="col-span-2">
           <label className="label">Notes</label>
@@ -160,8 +160,8 @@ export function Printers() {
       {loading ? (
         <div className="flex justify-center py-12 text-gray-500">Loading...</div>
       ) : printers.length === 0 ? (
-        <div className="card p-10 text-center text-gray-600">
-          <svg className="w-12 h-12 mx-auto mb-3 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="card p-10 text-center text-gray-500 dark:text-gray-600">
+          <svg className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
           </svg>
           <p>No printers yet. Add one to link GCODE files.</p>
@@ -175,19 +175,19 @@ export function Printers() {
               ) : (
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h3 className="font-semibold text-white">{p.name}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">{p.name}</h3>
                     {(p.brand || p.model_name) && (
-                      <p className="text-sm text-gray-400 mt-0.5">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
                         {[p.brand, p.model_name].filter(Boolean).join(" · ")}
                       </p>
                     )}
                     {(p.build_volume_x || p.build_volume_y || p.build_volume_z) && (
-                      <p className="text-xs text-gray-600 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-600 mt-1">
                         Build: {p.build_volume_x ?? "?"} × {p.build_volume_y ?? "?"} × {p.build_volume_z ?? "?"} mm
                       </p>
                     )}
                     {p.moonraker_url && (
-                      <p className="text-xs text-gray-600 mt-1 flex items-center gap-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-600 mt-1 flex items-center gap-1">
                         <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                         </svg>

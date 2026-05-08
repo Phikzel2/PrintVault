@@ -74,10 +74,10 @@ export function ImportModal({ onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-gray-900 border border-gray-800 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 shrink-0">
-          <h2 className="font-semibold text-white">Import from URL</h2>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
+          <h2 className="font-semibold text-gray-900 dark:text-white">Import from URL</h2>
           <button onClick={onClose} className="btn-ghost p-1.5 rounded-lg">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -123,7 +123,7 @@ export function ImportModal({ onClose }: Props) {
               <p className="text-xs text-gray-500">
                 From <span className="text-brand-400 font-medium">{preview.platform}</span>
                 {" · "}
-                <a href={preview.source_url} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-300">
+                <a href={preview.source_url} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-700 dark:hover:text-gray-300">
                   view original
                 </a>
               </p>
@@ -145,14 +145,14 @@ export function ImportModal({ onClose }: Props) {
 
               {preview.license && (
                 <p className="text-xs text-gray-500">
-                  License: <span className="text-gray-300">{preview.license}</span>
+                  License: <span className="text-gray-700 dark:text-gray-300">{preview.license}</span>
                 </p>
               )}
 
               {preview.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {preview.tags.map((t) => (
-                    <span key={t} className="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded-full">{t}</span>
+                    <span key={t} className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full">{t}</span>
                   ))}
                 </div>
               )}
@@ -162,10 +162,10 @@ export function ImportModal({ onClose }: Props) {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="label mb-0">
-                      Files <span className="text-gray-600 font-normal">({selected.size} selected)</span>
+                      Files <span className="text-gray-500 dark:text-gray-600 font-normal">({selected.size} selected)</span>
                     </label>
                     <button
-                      className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                      className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                       onClick={() =>
                         setSelected(allSelected ? new Set() : new Set(preview.files.map((_, i) => i)))
                       }
@@ -177,7 +177,7 @@ export function ImportModal({ onClose }: Props) {
                     {preview.files.map((f, i) => (
                       <label
                         key={i}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 cursor-pointer transition-colors"
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
                       >
                         <input
                           type="checkbox"
@@ -185,10 +185,10 @@ export function ImportModal({ onClose }: Props) {
                           onChange={() => toggleFile(i)}
                           className="rounded shrink-0"
                         />
-                        <span className="text-xs font-mono bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded shrink-0">
+                        <span className="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded shrink-0">
                           {f.file_type}
                         </span>
-                        <span className="text-sm text-gray-200 truncate flex-1">{f.name}</span>
+                        <span className="text-sm text-gray-800 dark:text-gray-200 truncate flex-1">{f.name}</span>
                         {f.size != null && (
                           <span className="text-xs text-gray-500 shrink-0">{formatSize(f.size)}</span>
                         )}
@@ -205,7 +205,7 @@ export function ImportModal({ onClose }: Props) {
 
         {/* Footer */}
         {preview && (
-          <div className="px-5 py-4 border-t border-gray-800 flex gap-2 justify-end shrink-0">
+          <div className="px-5 py-4 border-t border-gray-200 dark:border-gray-800 flex gap-2 justify-end shrink-0">
             <button className="btn-secondary" onClick={onClose} disabled={importing}>
               Cancel
             </button>

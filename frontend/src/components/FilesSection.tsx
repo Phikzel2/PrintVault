@@ -21,11 +21,11 @@ function isFileDrag(e: React.DragEvent): boolean {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  STL:   "bg-blue-900/50 text-blue-300 border-blue-800",
-  "3MF": "bg-purple-900/50 text-purple-300 border-purple-800",
-  GCODE: "bg-green-900/50 text-green-300 border-green-800",
-  OBJ:   "bg-yellow-900/50 text-yellow-300 border-yellow-800",
-  STEP:  "bg-orange-900/50 text-orange-300 border-orange-800",
+  STL:   "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800",
+  "3MF": "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-800",
+  GCODE: "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-800",
+  OBJ:   "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/50 dark:text-yellow-300 dark:border-yellow-800",
+  STEP:  "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-800",
 };
 
 function formatBytes(b: number | null) {
@@ -35,7 +35,7 @@ function formatBytes(b: number | null) {
 }
 
 function TypeBadge({ type }: { type: string }) {
-  const color = TYPE_COLORS[type] ?? "bg-gray-800 text-gray-300 border-gray-700";
+  const color = TYPE_COLORS[type] ?? "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
   return (
     <span className={`text-xs px-2 py-0.5 rounded border font-mono shrink-0 ${color}`}>
       {type}
@@ -146,24 +146,24 @@ function GcodeRow({
       }}
       onDragEnd={onDragEnd}
       className={`flex flex-col gap-1 py-1.5 px-2 rounded-lg transition-opacity group ${
-        isDragging ? "opacity-40" : "hover:bg-gray-800/60 cursor-grab active:cursor-grabbing"
+        isDragging ? "opacity-40" : "hover:bg-gray-100/60 dark:hover:bg-gray-800/60 cursor-grab active:cursor-grabbing"
       }`}
     >
       <div className="flex items-center gap-2 select-none relative">
-        <svg className="w-3.5 h-3.5 text-gray-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <svg className="w-3.5 h-3.5 text-gray-400 dark:text-gray-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path d="M7 2a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zM17 2a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0zm0 6a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
         <TypeBadge type={file.file_type} />
-        <span className="text-sm text-gray-300 flex-1 min-w-0 truncate" title={file.original_filename}>
+        <span className="text-sm text-gray-700 dark:text-gray-300 flex-1 min-w-0 truncate" title={file.original_filename}>
           {file.original_filename}
         </span>
         {!showPrinter && assignedPrinter && (
-          <span className="text-xs text-gray-500 shrink-0 max-w-[72px] truncate group-hover:hidden" title={assignedPrinter.name}>
+          <span className="text-xs text-gray-500 dark:text-gray-500 shrink-0 max-w-[72px] truncate group-hover:hidden" title={assignedPrinter.name}>
             {assignedPrinter.name}
           </span>
         )}
-        <span className="text-xs text-gray-600 shrink-0 group-hover:hidden">{formatBytes(file.file_size)}</span>
-        <div className="absolute right-0 inset-y-0 flex items-center gap-0.5 pr-1 pl-4 bg-gray-900 group-hover:bg-[#192231] opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-[opacity,background-color] duration-100">
+        <span className="text-xs text-gray-500 dark:text-gray-600 shrink-0 group-hover:hidden">{formatBytes(file.file_size)}</span>
+        <div className="absolute right-0 inset-y-0 flex items-center gap-0.5 pr-1 pl-4 bg-white dark:bg-gray-900 group-hover:bg-gray-50 dark:group-hover:bg-[#192231] opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-[opacity,background-color] duration-100">
             {canSend && (
               <button
                 onClick={handleSend}
@@ -191,7 +191,7 @@ function GcodeRow({
             {printers.length > 0 && (
               <button
                 onClick={(e) => { e.stopPropagation(); setShowPrinter((v) => !v); }}
-                className={`btn-ghost p-1 rounded shrink-0 ${showPrinter ? "text-gray-400" : "text-gray-600 hover:text-gray-400"}`}
+                className={`btn-ghost p-1 rounded shrink-0 ${showPrinter ? "text-gray-600 dark:text-gray-400" : "text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400"}`}
                 data-tooltip="Printer settings"
               >
                 <svg
@@ -209,7 +209,7 @@ function GcodeRow({
           <select
             value={file.printer_id ?? ""}
             onChange={(e) => onPrinterChange(file.id, e.target.value ? Number(e.target.value) : null)}
-            className="text-xs bg-gray-900 border border-gray-700 rounded px-2 py-1 text-gray-400 flex-1"
+            className="text-xs bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded px-2 py-1 text-gray-700 dark:text-gray-400 flex-1"
           >
             <option value="">No printer</option>
             {printers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -266,7 +266,7 @@ function SourceGroup({
         isTarget
           ? "border-brand-500 bg-brand-600/10"
           : anyDrag
-          ? "border-gray-700 border-dashed"
+          ? "border-gray-300 dark:border-gray-700 border-dashed"
           : "border-transparent"
       }`}
     >
@@ -283,17 +283,17 @@ function SourceGroup({
             <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
           </svg>
           {isCollapsed && gcodes.length > 0 && (
-            <span className="text-xs text-gray-600 font-normal tabular-nums">{gcodes.length}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-600 font-normal tabular-nums">{gcodes.length}</span>
           )}
         </button>
         <TypeBadge type={sourceFile.file_type} />
-        <span className="text-sm text-gray-200 flex-1 min-w-0 truncate font-medium" title={sourceFile.original_filename}>
+        <span className="text-sm text-gray-800 dark:text-gray-200 flex-1 min-w-0 truncate font-medium" title={sourceFile.original_filename}>
           {sourceFile.original_filename}
         </span>
-        <span className="text-xs text-gray-600 shrink-0 group-hover:hidden">
+        <span className="text-xs text-gray-500 dark:text-gray-600 shrink-0 group-hover:hidden">
           {formatBytes(sourceFile.file_size)}
         </span>
-        <div className="absolute right-0 inset-y-0 flex items-center gap-0.5 pr-1 pl-4 bg-gray-900 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-100">
+        <div className="absolute right-0 inset-y-0 flex items-center gap-0.5 pr-1 pl-4 bg-white dark:bg-gray-900 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-100">
           {THUMBNAIL_TYPES.has(sourceFile.file_type) && (
             <ThumbnailBtn onClick={onSetThumbnail} busy={thumbBusy} />
           )}
@@ -305,7 +305,7 @@ function SourceGroup({
       {/* Drop hint — shared for internal drag and Finder drop */}
       {anyDrag && !isCollapsed && (
         <div className={`mx-3 mb-2 rounded-lg border border-dashed py-1.5 text-center text-xs transition-colors ${
-          isTarget ? "border-brand-500 text-brand-400" : "border-gray-700 text-gray-600"
+          isTarget ? "border-brand-500 text-brand-400" : "border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-600"
         }`}>
           {isTarget
             ? "Release to link here"
@@ -322,7 +322,7 @@ function SourceGroup({
 
       {/* Linked GCODEs */}
       {!isCollapsed && gcodes.length > 0 && (
-        <div className="ml-4 pl-3 border-l border-gray-800 mb-2">
+        <div className="ml-4 pl-3 border-l border-gray-200 dark:border-gray-800 mb-2">
           {gcodes.map((g) => (
             <GcodeRow
               key={g.id}
@@ -478,7 +478,7 @@ export function FilesSection({
       }}
     >
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-gray-300">Files</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Files</h2>
         <div className="flex items-center gap-2">
           {uploading && (
             <span className="w-3.5 h-3.5 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
@@ -498,7 +498,7 @@ export function FilesSection({
 
       {files.length === 0 && (
         <div className={`rounded-xl border border-dashed py-6 text-center text-sm transition-colors ${
-          anyExternalDrag ? "border-brand-500 text-brand-400" : "border-gray-800 text-gray-600"
+          anyExternalDrag ? "border-brand-500 text-brand-400" : "border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-600"
         }`}>
           {anyExternalDrag ? "Release to upload" : "No files yet"}
         </div>
@@ -534,20 +534,20 @@ export function FilesSection({
             {...dropProps("unlinked")}
             className={`rounded-xl border transition-colors mt-1 ${
               dropTarget === "unlinked"
-                ? "border-gray-500 bg-gray-800/40"
+                ? "border-gray-400 dark:border-gray-500 bg-gray-100/40 dark:bg-gray-800/40"
                 : activeDrag
-                ? "border-gray-700 border-dashed"
+                ? "border-gray-300 dark:border-gray-700 border-dashed"
                 : "border-transparent"
             }`}
           >
             {(activeDrag || unlinkedGcodes.length > 0) && (
-              <p className={`text-xs px-2 pt-2 pb-1 ${dropTarget === "unlinked" ? "text-gray-300" : "text-gray-600"}`}>
+              <p className={`text-xs px-2 pt-2 pb-1 ${dropTarget === "unlinked" ? "text-gray-700 dark:text-gray-300" : "text-gray-500 dark:text-gray-600"}`}>
                 {activeDrag && dropTarget === "unlinked" ? "Release to unlink" : "Unlinked GCODE"}
               </p>
             )}
             {activeDrag && (
               <div className={`mx-2 mb-2 rounded-lg border border-dashed py-1.5 text-center text-xs transition-colors ${
-                dropTarget === "unlinked" ? "border-gray-500 text-gray-400" : "border-gray-700 text-gray-600"
+                dropTarget === "unlinked" ? "border-gray-400 dark:border-gray-500 text-gray-600 dark:text-gray-400" : "border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-600"
               }`}>
                 Drop here to unlink
               </div>
@@ -586,7 +586,7 @@ export function FilesSection({
           <div className={`mt-1 rounded-xl border border-dashed py-2 text-center text-xs transition-colors ${
             externalTarget === null
               ? "border-brand-500 text-brand-400"
-              : "border-gray-700 text-gray-600"
+              : "border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-600"
           }`}>
             {externalTarget === null ? "Drop here to upload without linking" : "Drop to upload"}
           </div>

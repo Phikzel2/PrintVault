@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Header } from "./components/Header";
 import { Home } from "./pages/Home";
@@ -42,11 +43,13 @@ function AppShell() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/*" element={<AppShell />} />
-      </Routes>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/*" element={<AppShell />} />
+        </Routes>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

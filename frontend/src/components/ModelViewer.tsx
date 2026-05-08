@@ -96,7 +96,7 @@ function SlicerButton({ fileId }: { fileId: number }) {
     <div ref={ref} className="absolute bottom-3 left-3 flex items-center">
       <button
         onClick={() => active ? launch(active) : setOpen((v) => !v)}
-        className="flex items-center gap-1.5 text-xs bg-gray-900/80 hover:bg-gray-800 border border-gray-700 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-l-lg transition-colors backdrop-blur-sm"
+        className="flex items-center gap-1.5 text-xs bg-white/80 dark:bg-gray-900/80 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-2.5 py-1.5 rounded-l-lg transition-colors backdrop-blur-sm"
       >
         <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -106,7 +106,7 @@ function SlicerButton({ fileId }: { fileId: number }) {
       </button>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center px-1.5 py-1.5 text-xs bg-gray-900/80 hover:bg-gray-800 border border-l-0 border-gray-700 text-gray-500 hover:text-white rounded-r-lg transition-colors backdrop-blur-sm"
+        className="flex items-center px-1.5 py-1.5 text-xs bg-white/80 dark:bg-gray-900/80 hover:bg-gray-100 dark:hover:bg-gray-800 border border-l-0 border-gray-300 dark:border-gray-700 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-r-lg transition-colors backdrop-blur-sm"
       >
         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -114,15 +114,15 @@ function SlicerButton({ fileId }: { fileId: number }) {
       </button>
 
       {open && (
-        <div className="absolute bottom-full mb-1.5 left-0 bg-gray-900 border border-gray-700 rounded-lg shadow-xl py-1 min-w-[150px] z-10">
+        <div className="absolute bottom-full mb-1.5 left-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1 min-w-[150px] z-10">
           {SLICERS.map((s) => (
             <button
               key={s.id}
               onClick={() => launch(s)}
               className={`w-full text-left text-xs px-3 py-1.5 transition-colors flex items-center gap-2 ${
                 s.id === preferred
-                  ? "text-white bg-gray-800"
-                  : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                  ? "text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800"
+                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               <SlicerIcon id={s.id} />
@@ -139,7 +139,7 @@ function Loader() {
   const { progress } = useProgress();
   return (
     <Html center>
-      <div className="text-gray-400 text-sm text-center">
+      <div className="text-gray-600 dark:text-gray-400 text-sm text-center">
         <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
         {Math.round(progress)}%
       </div>
@@ -195,7 +195,7 @@ export function ModelViewer({ files }: ModelViewerProps) {
 
   if (viewableFiles.length === 0) {
     return (
-      <div className="w-full h-full flex items-center justify-center text-gray-600 flex-col gap-3">
+      <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600 flex-col gap-3">
         <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
         </svg>
@@ -211,7 +211,7 @@ export function ModelViewer({ files }: ModelViewerProps) {
   return (
     <div className="w-full h-full flex flex-col">
       {viewableFiles.length > 1 && (
-        <div className="flex gap-2 p-2 bg-gray-900 border-b border-gray-800 overflow-x-auto shrink-0">
+        <div className="flex gap-2 p-2 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 overflow-x-auto shrink-0">
           {viewableFiles.map((f) => (
             <button
               key={f.id}
@@ -219,7 +219,7 @@ export function ModelViewer({ files }: ModelViewerProps) {
               className={`text-xs px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
                 activeFile?.id === f.id
                   ? "bg-brand-600 text-white"
-                  : "bg-gray-800 text-gray-400 hover:text-gray-200"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
               }`}
             >
               {f.original_filename}
@@ -256,7 +256,7 @@ export function ModelViewer({ files }: ModelViewerProps) {
         )}
 
         {activeFile && <SlicerButton fileId={activeFile.id} />}
-        <div className="absolute bottom-3 right-3 text-xs text-gray-600 select-none pointer-events-none">
+        <div className="absolute bottom-3 right-3 text-xs text-gray-400 dark:text-gray-600 select-none pointer-events-none">
           Drag to rotate · Scroll to zoom
         </div>
       </div>

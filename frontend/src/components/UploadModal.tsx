@@ -132,7 +132,7 @@ export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalPro
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
       <div className="card w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b border-gray-800">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800">
           <h2 className="text-lg font-semibold">Add New Model</h2>
           <button onClick={onClose} className="btn-ghost p-1.5 rounded-lg">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -141,7 +141,7 @@ export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalPro
           </button>
         </div>
 
-        <div className="flex border-b border-gray-800">
+        <div className="flex border-b border-gray-200 dark:border-gray-800">
           {(["files", "meta"] as Step[]).map((s, i) => (
             <button
               key={s}
@@ -149,7 +149,7 @@ export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalPro
               className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${
                 step === s
                   ? "border-brand-500 text-brand-400"
-                  : "border-transparent text-gray-500 hover:text-gray-300"
+                  : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
             >
               {i + 1}. {s === "files" ? "Files" : "Details"}
@@ -170,15 +170,15 @@ export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalPro
                 className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
                   isDragActive
                     ? "border-brand-500 bg-brand-600/10"
-                    : "border-gray-700 hover:border-gray-600"
+                    : "border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600"
                 }`}
               >
                 <input {...getInputProps()} />
-                <svg className="w-10 h-10 text-gray-600 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-10 h-10 text-gray-400 dark:text-gray-600 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
-                <p className="text-gray-400 text-sm">Drop files here or click to browse</p>
-                <p className="text-gray-600 text-xs mt-1">STL, 3MF, GCODE, OBJ, STEP, AMF</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Drop files here or click to browse</p>
+                <p className="text-gray-500 dark:text-gray-600 text-xs mt-1">STL, 3MF, GCODE, OBJ, STEP, AMF</p>
               </div>
 
               {pendingFiles.length > 0 && (
@@ -189,13 +189,13 @@ export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalPro
                       .map((pf, i) => ({ i, type: getFileTypeLabel(pf.file.name), name: pf.file.name }))
                       .filter(({ i, type: t }) => i !== idx && ["STL", "3MF", "OBJ"].includes(t));
                     return (
-                      <div key={idx} className="flex flex-col bg-gray-800 rounded-lg px-3 py-2 gap-1.5">
+                      <div key={idx} className="flex flex-col bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2 gap-1.5">
                         <div className="flex items-center gap-3">
-                          <span className="text-xs font-mono bg-gray-700 px-2 py-0.5 rounded text-gray-300 shrink-0">
+                          <span className="text-xs font-mono bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-700 dark:text-gray-300 shrink-0">
                             {type}
                           </span>
-                          <span className="text-sm text-gray-300 flex-1 truncate">{file.name}</span>
-                          <span className="text-xs text-gray-600 shrink-0">{formatBytes(file.size)}</span>
+                          <span className="text-sm text-gray-700 dark:text-gray-300 flex-1 truncate">{file.name}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-600 shrink-0">{formatBytes(file.size)}</span>
                           <button onClick={() => removeFile(idx)} className="btn-ghost p-1 rounded shrink-0">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -208,7 +208,7 @@ export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalPro
                               <select
                                 value={sourcePendingIdx ?? ""}
                                 onChange={(e) => setFileSource(idx, e.target.value !== "" ? Number(e.target.value) : null)}
-                                className="text-xs bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-300 flex-1"
+                                className="text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-gray-700 dark:text-gray-300 flex-1"
                               >
                                 <option value="">Sliced from… (optional)</option>
                                 {sourceOptions.map(({ i, name }) => (
@@ -220,7 +220,7 @@ export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalPro
                               <select
                                 value={printerId ?? ""}
                                 onChange={(e) => setFilePrinter(idx, e.target.value ? Number(e.target.value) : null)}
-                                className="text-xs bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-300 flex-1"
+                                className="text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-gray-700 dark:text-gray-300 flex-1"
                               >
                                 <option value="">No printer</option>
                                 {printers.map((p) => (
@@ -305,7 +305,7 @@ export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalPro
         )}
 
         {step === "meta" && (
-          <div className="flex justify-between items-center p-6 border-t border-gray-800 gap-3">
+          <div className="flex justify-between items-center p-6 border-t border-gray-200 dark:border-gray-800 gap-3">
             <button className="btn-secondary" onClick={() => setStep("files")}>
               Back
             </button>

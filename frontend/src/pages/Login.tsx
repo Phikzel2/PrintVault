@@ -27,20 +27,20 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-3 mb-8">
           <svg className="w-10 h-10 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
           </svg>
-          <span className="text-2xl font-bold text-white">PrintVault</span>
+          <span className="text-2xl font-bold text-gray-900 dark:text-white">PrintVault</span>
         </div>
 
         <div className="card p-6">
-          <h1 className="text-lg font-semibold text-white mb-6">Sign in</h1>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Sign in</h1>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-400 font-medium">Username</label>
+              <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">Username</label>
               <input
                 className="input"
                 type="text"
@@ -52,7 +52,7 @@ export function Login() {
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-400 font-medium">Password</label>
+              <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">Password</label>
               <input
                 className="input"
                 type="password"

@@ -4,7 +4,10 @@
 
 @layer base {
   body {
-    @apply bg-gray-950 text-gray-100 antialiased;
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
+  .dark body {
+    @apply bg-gray-950 text-gray-100;
   }
 
   ::-webkit-scrollbar {
@@ -13,17 +16,23 @@
   }
 
   ::-webkit-scrollbar-track {
+    @apply bg-gray-200;
+  }
+  .dark ::-webkit-scrollbar-track {
     @apply bg-gray-900;
   }
 
   ::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 rounded-full;
+  }
+  .dark ::-webkit-scrollbar-thumb {
     @apply bg-gray-700 rounded-full;
   }
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-950 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-50 dark:focus:ring-offset-gray-950 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-primary {
@@ -31,7 +40,7 @@
   }
 
   .btn-secondary {
-    @apply btn bg-gray-800 hover:bg-gray-700 text-gray-200 focus:ring-gray-600;
+    @apply btn bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200 focus:ring-gray-500;
   }
 
   .btn-danger {
@@ -39,19 +48,19 @@
   }
 
   .btn-ghost {
-    @apply btn bg-transparent hover:bg-gray-800 text-gray-400 hover:text-gray-100;
+    @apply btn bg-transparent hover:bg-gray-100 text-gray-600 hover:text-gray-900 dark:hover:bg-gray-800 dark:text-gray-400 dark:hover:text-gray-100;
   }
 
   .input {
-    @apply w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent;
+    @apply w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent;
   }
 
   .label {
-    @apply block text-sm font-medium text-gray-400 mb-1;
+    @apply block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1;
   }
 
   .card {
-    @apply bg-gray-900 border border-gray-800 rounded-xl;
+    @apply bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-800 rounded-xl;
   }
 
   [data-tooltip] {
@@ -65,21 +74,25 @@
     left: 50%;
     transform: translateX(-50%);
     padding: 3px 8px;
-    background: #1f2937;
-    color: #d1d5db;
+    background: #f9fafb;
+    color: #374151;
     font-size: 11px;
     white-space: nowrap;
     border-radius: 4px;
-    border: 1px solid #374151;
+    border: 1px solid #e5e7eb;
     pointer-events: none;
     opacity: 0;
     transition: opacity 75ms;
     z-index: 100;
   }
 
+  .dark [data-tooltip]::after {
+    background: #1f2937;
+    color: #d1d5db;
+    border: 1px solid #374151;
+  }
+
   [data-tooltip]:hover::after {
     opacity: 1;
   }
-
-
 }

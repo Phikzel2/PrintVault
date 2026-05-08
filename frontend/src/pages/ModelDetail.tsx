@@ -130,7 +130,7 @@ export function ModelDetail() {
       <div className="flex flex-col lg:flex-row gap-6 lg:items-start">
         {/* Left: breadcrumb + viewer as one sticky column */}
         <div className="lg:flex-1 flex flex-col gap-4 lg:sticky lg:top-[5.5rem] lg:h-[calc(100vh-7rem)]">
-          <Link to="/" className="text-sm text-gray-500 hover:text-gray-300 flex items-center gap-1">
+          <Link to="/" className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -160,7 +160,7 @@ export function ModelDetail() {
             ) : (
               <>
                 <div className="flex items-start justify-between gap-2">
-                  <h1 className="text-lg font-semibold text-white leading-snug">{model.name}</h1>
+                  <h1 className="text-lg font-semibold text-gray-900 dark:text-white leading-snug">{model.name}</h1>
                   {canEdit && (
                     <button onClick={() => setEditing(true)} className="btn-ghost p-1.5 rounded shrink-0" title="Edit">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -179,17 +179,17 @@ export function ModelDetail() {
                     />
                   </div>
                 )}
-                {model.description && <p className="text-sm text-gray-400 mt-2">{model.description}</p>}
+                {model.description && <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{model.description}</p>}
                 {model.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-3">
                     {model.tags.map((t) => (
-                      <Link key={t.id} to={`/?tag=${t.name}`} className="text-xs px-2 py-0.5 bg-gray-800 hover:bg-gray-700 text-gray-400 rounded-full transition-colors">
+                      <Link key={t.id} to={`/?tag=${t.name}`} className="text-xs px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-400 rounded-full transition-colors">
                         {t.name}
                       </Link>
                     ))}
                   </div>
                 )}
-                <div className="mt-3 flex flex-col gap-1 text-xs text-gray-600">
+                <div className="mt-3 flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-600">
                   {model.source_url && (
                     <a href={model.source_url} target="_blank" rel="noopener noreferrer" className="text-brand-400 hover:underline truncate">
                       {model.source_url}
@@ -218,10 +218,10 @@ export function ModelDetail() {
             <div className="card p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-300">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     {model.is_public ? "Public" : "Private"}
                   </p>
-                  <p className="text-xs text-gray-600 mt-0.5">
+                  <p className="text-xs text-gray-500 dark:text-gray-600 mt-0.5">
                     {model.is_public ? "Visible to all users" : "Only visible to you"}
                   </p>
                 </div>
@@ -255,8 +255,8 @@ export function ModelDetail() {
             <div className="card p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-300">Thumbnail</p>
-                  <p className="text-xs text-gray-600 mt-0.5">Upload a photo to use as cover image</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Thumbnail</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-600 mt-0.5">Upload a photo to use as cover image</p>
                 </div>
                 <label
                   htmlFor="thumb-upload"
@@ -285,7 +285,7 @@ export function ModelDetail() {
 
           {/* Danger zone */}
           {canEdit && (
-            <div className="card p-4 border-red-900/50">
+            <div className="card p-4 border-red-200 dark:border-red-900/50">
               {confirmDelete ? (
                 <div className="flex flex-col gap-2">
                   <p className="text-sm text-red-400">Delete this model and all its files?</p>

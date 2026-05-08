@@ -93,13 +93,13 @@ export function Home() {
       {/* Full-page drop overlay */}
       {externalDrag && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm pointer-events-none">
-          <div className="border-2 border-dashed border-brand-500 rounded-2xl px-20 py-14 text-center bg-gray-900/90">
+          <div className="border-2 border-dashed border-brand-500 rounded-2xl px-20 py-14 text-center bg-white/90 dark:bg-gray-900/90">
             <svg className="w-14 h-14 text-brand-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
             <p className="text-xl font-semibold text-brand-400">Drop to add new model</p>
-            <p className="text-sm text-gray-400 mt-2">STL · 3MF · GCODE · OBJ · STEP · AMF</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">STL · 3MF · GCODE · OBJ · STEP · AMF</p>
           </div>
         </div>
       )}
@@ -109,11 +109,11 @@ export function Home() {
         <aside className="w-52 shrink-0 hidden md:block">
           <div className="card p-4 sticky top-24 flex flex-col gap-5">
             <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">File Type</h3>
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wider mb-2">File Type</h3>
               <div className="flex flex-col gap-1">
                 <button
                   onClick={() => setParam("type", "")}
-                  className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${!activeType ? "bg-brand-600/20 text-brand-400" : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"}`}
+                  className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${!activeType ? "bg-brand-600/20 text-brand-400" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"}`}
                 >
                   All types
                 </button>
@@ -121,7 +121,7 @@ export function Home() {
                   <button
                     key={t}
                     onClick={() => setParam("type", t === activeType ? "" : t)}
-                    className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${activeType === t ? "bg-brand-600/20 text-brand-400" : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"}`}
+                    className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${activeType === t ? "bg-brand-600/20 text-brand-400" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"}`}
                   >
                     {t}
                   </button>
@@ -130,13 +130,13 @@ export function Home() {
             </div>
 
             <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Visibility</h3>
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wider mb-2">Visibility</h3>
               <div className="flex flex-col gap-1">
                 {(["", "public", "private"] as const).map((v) => (
                   <button
                     key={v || "all"}
                     onClick={() => setParam("visibility", v === activeVisibility ? "" : v)}
-                    className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${activeVisibility === v ? "bg-brand-600/20 text-brand-400" : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"}`}
+                    className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${activeVisibility === v ? "bg-brand-600/20 text-brand-400" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"}`}
                   >
                     {v === "" ? "All" : v === "public" ? "Public" : "Private"}
                   </button>
@@ -146,11 +146,11 @@ export function Home() {
 
             {tags.length > 0 && (
               <div>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Tags</h3>
+                <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wider mb-2">Tags</h3>
                 <div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
                   <button
                     onClick={() => setParam("tag", "")}
-                    className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${!activeTag ? "bg-brand-600/20 text-brand-400" : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"}`}
+                    className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${!activeTag ? "bg-brand-600/20 text-brand-400" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"}`}
                   >
                     All tags
                   </button>
@@ -158,7 +158,7 @@ export function Home() {
                     <button
                       key={tag.id}
                       onClick={() => setParam("tag", tag.name === activeTag ? "" : tag.name)}
-                      className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${activeTag === tag.name ? "bg-brand-600/20 text-brand-400" : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"}`}
+                      className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${activeTag === tag.name ? "bg-brand-600/20 text-brand-400" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"}`}
                     >
                       {tag.name}
                     </button>
@@ -184,11 +184,11 @@ export function Home() {
           {loading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="card aspect-[3/4] animate-pulse bg-gray-800" />
+                <div key={i} className="card aspect-[3/4] animate-pulse bg-gray-200 dark:bg-gray-800" />
               ))}
             </div>
           ) : models.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 text-gray-600">
+            <div className="flex flex-col items-center justify-center py-24 text-gray-400 dark:text-gray-600">
               <svg className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
@@ -213,7 +213,7 @@ export function Home() {
                   key={p}
                   onClick={() => setParam("page", String(p))}
                   className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                    p === page ? "bg-brand-600 text-white" : "bg-gray-800 text-gray-400 hover:text-gray-200"
+                    p === page ? "bg-brand-600 text-white" : "bg-gray-200 text-gray-700 hover:text-gray-900 dark:bg-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
                   }`}
                 >
                   {p}

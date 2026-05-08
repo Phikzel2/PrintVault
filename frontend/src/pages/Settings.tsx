@@ -17,7 +17,7 @@ export function Settings() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       <div className="mb-4">
-        <Link to="/" className="text-sm text-gray-500 hover:text-gray-300 flex items-center gap-1">
+        <Link to="/" className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -25,7 +25,7 @@ export function Settings() {
         </Link>
       </div>
 
-      <h1 className="text-xl font-bold text-white mb-6">Settings</h1>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Settings</h1>
 
       <div className="flex flex-col gap-6">
         <PreferencesSection user={user} updateUser={updateUser} />
@@ -55,10 +55,10 @@ function PreferencesSection({ user, updateUser }: { user: User; updateUser: (u: 
 
   return (
     <div className="card p-5">
-      <h2 className="font-semibold text-white mb-4">Preferences</h2>
+      <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Preferences</h2>
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-400 font-medium">Date format</label>
+          <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">Date format</label>
           <select
             className="input text-sm"
             value={dateFormat}
@@ -109,18 +109,18 @@ function PasswordSection() {
 
   return (
     <div className="card p-5">
-      <h2 className="font-semibold text-white mb-4">Change Password</h2>
+      <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Change Password</h2>
       <form onSubmit={save} className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-400 font-medium">Current password</label>
+          <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">Current password</label>
           <input className="input text-sm" type="password" value={current} onChange={(e) => setCurrent(e.target.value)} required autoComplete="current-password" />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-400 font-medium">New password</label>
+          <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">New password</label>
           <input className="input text-sm" type="password" value={next} onChange={(e) => setNext(e.target.value)} required autoComplete="new-password" />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-400 font-medium">Confirm new password</label>
+          <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">Confirm new password</label>
           <input className="input text-sm" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required autoComplete="new-password" />
         </div>
         {error && <p className="text-sm text-red-400">{error}</p>}
@@ -151,7 +151,7 @@ function UserManagementSection() {
   if (!loaded) {
     return (
       <div className="card p-5">
-        <h2 className="font-semibold text-white mb-4">User Management</h2>
+        <h2 className="font-semibold text-gray-900 dark:text-white mb-4">User Management</h2>
         <button onClick={load} className="btn-secondary text-sm">Load users</button>
       </div>
     );
@@ -181,13 +181,13 @@ function UserManagementSection() {
 
   return (
     <div className="card p-5">
-      <h2 className="font-semibold text-white mb-4">User Management</h2>
+      <h2 className="font-semibold text-gray-900 dark:text-white mb-4">User Management</h2>
 
       <div className="flex flex-col gap-2 mb-6">
         {(users ?? []).map((u) => (
-          <div key={u.id} className="flex items-center justify-between py-2 border-b border-gray-800">
+          <div key={u.id} className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-800">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-200">{u.username}</span>
+              <span className="text-sm text-gray-800 dark:text-gray-200">{u.username}</span>
               {u.is_admin && <span className="text-xs px-2 py-0.5 bg-brand-900/50 text-brand-400 rounded-full">admin</span>}
             </div>
             {u.id !== currentUser?.id && (
@@ -199,7 +199,7 @@ function UserManagementSection() {
         ))}
       </div>
 
-      <h3 className="text-sm font-medium text-gray-300 mb-3">Add user</h3>
+      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Add user</h3>
       <form onSubmit={createUser} className="flex flex-col gap-3">
         <div className="flex gap-3">
           <input
