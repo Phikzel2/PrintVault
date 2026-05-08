@@ -109,6 +109,13 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
     const newValue = (`${before}#${tag.name}${suffix}`).trimEnd() + " ";
     setSearch(newValue);
     setDropdownOpen(false);
+
+    const { text, tags } = parseSearchInput(newValue);
+    const next = new URLSearchParams();
+    if (text) next.set("search", text);
+    tags.forEach(t => next.append("tag", t));
+    navigate(next.toString() ? `/?${next.toString()}` : "/");
+
     const newCursor = before.length + 1 + tag.name.length + 1;
     requestAnimationFrame(() => {
       inputRef.current?.focus();
