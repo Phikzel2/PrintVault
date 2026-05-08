@@ -39,7 +39,10 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [mobileSearchFading, setMobileSearchFading] = useState(false);
+  const [mobileSearchHidden, setMobileSearchHidden] = useState(false);
+  const scrolledRef = useRef(false);
+  const mobileTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Two refs: one per form instance (desktop row 1 / mobile row 2)
   const desktopInputRef = useRef<HTMLInputElement>(null);
@@ -72,11 +75,24 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   useEffect(() => {
     const onScroll = () => {
       const isScrolled = window.scrollY > 10;
-      setScrolled(isScrolled);
-      if (isScrolled) setDropdownOpen(false);
+      if (isScrolled === scrolledRef.current) return;
+      scrolledRef.current = isScrolled;
+      clearTimeout(mobileTimerRef.current);
+      if (isScrolled) {
+        setDropdownOpen(false);
+        setMobileSearchFading(true);
+        mobileTimerRef.current = setTimeout(() => setMobileSearchHidden(true), 200);
+      } else {
+        setMobileSearchHidden(false);
+        // Wait two frames so the div is in the DOM before the opacity transition starts
+        requestAnimationFrame(() => requestAnimationFrame(() => setMobileSearchFading(false)));
+      }
     };
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      clearTimeout(mobileTimerRef.current);
+    };
   }, []);
 
   // Native × clear button fires "search" event, not "change" — handle both inputs
@@ -319,22 +335,20 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
         </nav>
       </div>
 
-      {/* Row 2 — mobile search bar, fades + collapses when scrolled.
-          grid-template-rows animates height; overflow-hidden is on the inner
-          div only, so the absolute dropdown (whose containing block is the
-          form inside it) is never clipped. */}
-      <div className={`md:hidden grid transition-[grid-template-rows,opacity] duration-200 ease-in-out ${
-        scrolled ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
-      }`}>
-        <div className="overflow-hidden min-h-0">
-          <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-2">
-            <form ref={mobileFormRef} onSubmit={handleSubmit} className="relative">
-              <input ref={mobileInputRef} {...sharedInputProps} className="input text-base" />
-              {dropdownOpen && <Dropdown />}
-            </form>
-          </div>
+      {/* Row 2 — mobile search bar.
+          No overflow-hidden anywhere near this row so the absolute dropdown
+          is never clipped. Fades out via opacity, then unmounts after the
+          transition so the height collapses cleanly without clipping. */}
+      {!mobileSearchHidden && (
+        <div className={`md:hidden border-t border-gray-200 dark:border-gray-800 px-4 py-2 transition-opacity duration-200 ${
+          mobileSearchFading ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`}>
+          <form ref={mobileFormRef} onSubmit={handleSubmit} className="relative">
+            <input ref={mobileInputRef} {...sharedInputProps} className="input text-base" />
+            {dropdownOpen && <Dropdown />}
+          </form>
         </div>
-      </div>
+      )}
 
     </header>
   );
