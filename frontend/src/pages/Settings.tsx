@@ -28,6 +28,16 @@ export function Settings() {
       <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Settings</h1>
 
       <div className="flex flex-col gap-6">
+        <div className="card p-5">
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-1">Printers</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Manage printer profiles and Moonraker connections.</p>
+          <Link to="/printers" className="btn-secondary text-sm self-start inline-flex items-center gap-1.5">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Manage Printers
+          </Link>
+        </div>
         <PreferencesSection user={user} updateUser={updateUser} />
         <PasswordSection />
         {user.is_admin && <UserManagementSection />}

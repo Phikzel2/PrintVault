@@ -267,9 +267,6 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
 
         {/* Nav — ml-auto pushes it right on mobile (no search bar in row 1) */}
         <nav className="flex items-center gap-2 shrink-0 ml-auto md:ml-0">
-          <Link to="/printers" className="btn-ghost text-sm px-3 py-2 rounded-lg">
-            Printers
-          </Link>
           {onImport && user && (
             <button onClick={onImport} className="btn-secondary text-sm hidden sm:flex items-center gap-1.5">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
