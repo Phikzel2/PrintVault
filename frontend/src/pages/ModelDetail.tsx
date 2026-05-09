@@ -136,7 +136,7 @@ export function ModelDetail() {
             </svg>
             Library
           </Link>
-          <div className="card overflow-hidden flex-1 min-h-[320px]">
+          <div className="card overflow-hidden h-[300px] lg:h-auto lg:flex-1 lg:min-h-[320px]">
             <ModelViewer files={model.files} />
           </div>
         </div>

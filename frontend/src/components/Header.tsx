@@ -1,4 +1,4 @@
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -30,6 +30,7 @@ function getActiveToken(value: string, cursor: number) {
 
 export function Header({ onAddModel, onImport }: HeaderProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -347,9 +348,9 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
 
     </header>
 
-    {/* Row 2 — separate sticky element so Web Animations on it cannot
-        affect the sticky <header> above (iOS Safari bug workaround). */}
-    {mobileSearchMounted && (
+    {/* Row 2 — only on home page; separate sticky element so Web Animations
+        cannot affect the sticky <header> above (iOS Safari bug workaround). */}
+    {location.pathname === "/" && mobileSearchMounted && (
       <div
         ref={mobileSearchRef}
         className="md:hidden sticky top-16 z-40 bg-white/80 dark:bg-gray-950/80 backdrop-blur border-b border-gray-200 dark:border-gray-800 px-4 py-2"
