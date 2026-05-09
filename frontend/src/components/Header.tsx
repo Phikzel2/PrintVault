@@ -44,6 +44,7 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   const mobileSearchRef = useRef<HTMLDivElement>(null);
   const exitAnimRef = useRef<Animation | null>(null);
   const scrolledRef = useRef(false);
+  const shouldAnimateInRef = useRef(false);
 
   // Two refs: one per form instance (desktop row 1 / mobile row 2)
   const desktopInputRef = useRef<HTMLInputElement>(null);
@@ -98,12 +99,30 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
       } else {
         exitAnimRef.current?.cancel();
         exitAnimRef.current = null;
+        shouldAnimateInRef.current = true;
         setMobileSearchMounted(true);
       }
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Animate the search row in after mount (when scrolling back to top)
+  useEffect(() => {
+    if (!mobileSearchMounted || !shouldAnimateInRef.current) return;
+    shouldAnimateInRef.current = false;
+    requestAnimationFrame(() => {
+      const el = mobileSearchRef.current;
+      if (!el) return;
+      el.animate(
+        [
+          { opacity: "0", maxHeight: "0px", overflow: "hidden" },
+          { opacity: "1", maxHeight: el.scrollHeight + "px", overflow: "hidden" },
+        ],
+        { duration: 220, easing: "ease-out" }
+      );
+    });
+  }, [mobileSearchMounted]);
 
   // Native × clear button fires "search" event, not "change" — handle both inputs
   useEffect(() => {
