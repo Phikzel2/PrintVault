@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 import uuid
 from pathlib import Path
 from typing import Optional
@@ -12,29 +13,13 @@ from sqlalchemy.orm import Session
 from .. import models, schemas
 from ..auth import get_current_user
 from ..config import settings
+from ..constants import detect_file_type
 from ..database import get_db
 from ..thumbnail import generate_thumbnail
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["files"])
-
-FILE_TYPE_MAP = {
-    ".stl": "STL",
-    ".3mf": "3MF",
-    ".gcode": "GCODE",
-    ".gc": "GCODE",
-    ".gco": "GCODE",
-    ".obj": "OBJ",
-    ".step": "STEP",
-    ".stp": "STEP",
-    ".amf": "AMF",
-}
-
-
-def detect_file_type(filename: str) -> str:
-    ext = Path(filename).suffix.lower()
-    return FILE_TYPE_MAP.get(ext, "OTHER")
 
 
 @router.post("/models/{model_id}/files", response_model=schemas.ModelFile, status_code=201)
@@ -121,7 +106,6 @@ async def upload_file(
 
     # Generate thumbnail — non-fatal if it fails
     if not model.thumbnail_path and file_type in ("STL", "3MF", "OBJ"):
-        import time
         thumb_dir = Path(settings.upload_dir) / "models" / str(model_id)
         thumb_path = str(thumb_dir / "thumbnail.jpg")
         if generate_thumbnail(str(file_path), thumb_path):

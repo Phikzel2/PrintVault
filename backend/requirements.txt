@@ -8,9 +8,6 @@ pydantic==2.7.1
 pydantic-settings==2.2.1
 aiofiles==23.2.1
 trimesh==4.3.2
-chardet==5.2.0
-networkx==3.3
-lxml==5.2.2
 numpy==1.26.4
 python-jose[cryptography]==3.3.0
 bcrypt==4.1.3

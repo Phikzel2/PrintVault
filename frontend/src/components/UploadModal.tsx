@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { modelsApi, printersApi, filesApi } from "../api/client";
 import { parseUploadError } from "../api/errors";
+import { getFileTypeLabel, formatBytes } from "../utils/format";
 import type { Printer } from "../types";
 
 interface UploadModalProps {
@@ -17,20 +18,6 @@ const ACCEPTED_TYPES = {
   "application/octet-stream": [".stl", ".3mf", ".gcode", ".gc", ".gco", ".obj", ".step", ".stp", ".amf"],
 };
 
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function getFileTypeLabel(name: string) {
-  const ext = name.split(".").pop()?.toLowerCase() ?? "";
-  const map: Record<string, string> = {
-    stl: "STL", "3mf": "3MF", gcode: "GCODE", gc: "GCODE", gco: "GCODE",
-    obj: "OBJ", step: "STEP", stp: "STEP", amf: "AMF",
-  };
-  return map[ext] ?? "OTHER";
-}
 
 function fileToModelName(filename: string): string {
   return filename

@@ -1,5 +1,8 @@
+import io
 import math
 import os
+import shutil
+import time
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
@@ -219,7 +222,6 @@ def delete_model(
 
     model_dir = Path(settings.upload_dir) / "models" / str(model_id)
     if model_dir.exists():
-        import shutil
         shutil.rmtree(model_dir)
 
     db.delete(model)
@@ -267,7 +269,6 @@ def set_thumbnail(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    import time
     from ..thumbnail import generate_thumbnail
 
     model = db.query(models.PrintModel).filter(models.PrintModel.id == model_id).first()
@@ -302,8 +303,6 @@ async def upload_thumbnail_image(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    import io
-    import time
     from PIL import Image
 
     model = db.query(models.PrintModel).filter(models.PrintModel.id == model_id).first()

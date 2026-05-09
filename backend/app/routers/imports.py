@@ -1,5 +1,7 @@
+import io
 import logging
 import re
+import time
 import uuid
 from pathlib import Path
 
@@ -11,24 +13,13 @@ from sqlalchemy.orm import Session
 from .. import models, schemas
 from ..auth import get_current_user
 from ..config import settings
+from ..constants import detect_file_type
 from ..database import get_db
 from ..thumbnail import generate_thumbnail
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/import", tags=["import"])
-
-FILE_TYPE_MAP = {
-    ".stl": "STL",
-    ".3mf": "3MF",
-    ".gcode": "GCODE",
-    ".gc": "GCODE",
-    ".gco": "GCODE",
-    ".obj": "OBJ",
-    ".step": "STEP",
-    ".stp": "STEP",
-    ".amf": "AMF",
-}
 
 
 class ImportFile(BaseModel):
@@ -63,10 +54,6 @@ class ImportRequest(BaseModel):
     thumbnail_url: str | None = None
 
 
-def _file_type(filename: str) -> str:
-    return FILE_TYPE_MAP.get(Path(filename).suffix.lower(), "OTHER")
-
-
 def _detect_platform(url: str) -> tuple[str, str]:
     if m := re.search(r"thingiverse\.com/thing:(\d+)", url):
         return "thingiverse", m.group(1)
@@ -95,7 +82,7 @@ async def _fetch_thingiverse(thing_id: str) -> ImportPreview:
             name=f["name"],
             download_url=f["download_url"],
             size=f.get("size"),
-            file_type=_file_type(f["name"]),
+            file_type=detect_file_type(f["name"]),
         )
         for f in files_raw
         if f.get("download_url")
@@ -268,8 +255,6 @@ async def confirm_import(
     async with httpx.AsyncClient(timeout=120.0, follow_redirects=True) as client:
         if data.thumbnail_url:
             try:
-                import io
-                import time
                 from PIL import Image
                 r = await client.get(data.thumbnail_url)
                 if r.is_success and "image" in r.headers.get("content-type", ""):
@@ -318,7 +303,6 @@ async def confirm_import(
             db.commit()
 
             if not thumbnail_set and f.file_type in ("STL", "3MF", "OBJ"):
-                import time
                 thumb_path = str(Path(settings.upload_dir) / "models" / str(db_model.id) / "thumbnail.jpg")
                 if generate_thumbnail(str(file_path), thumb_path):
                     db_model.thumbnail_path = f"/api/models/{db_model.id}/thumbnail?v={int(time.time())}"

@@ -1,18 +1,10 @@
 import { useState, useCallback } from "react";
 import { modelsApi, filesApi } from "../api/client";
 import { parseUploadError } from "../api/errors";
-
-const THUMBNAIL_TYPES = new Set(["STL", "3MF", "OBJ"]);
+import { getFileTypeLabel, formatBytes } from "../utils/format";
 import type { ModelFile, Printer } from "../types";
 
-function getFileTypeLabel(name: string): string {
-  const ext = name.split(".").pop()?.toLowerCase() ?? "";
-  const map: Record<string, string> = {
-    stl: "STL", "3mf": "3MF", gcode: "GCODE", gc: "GCODE", gco: "GCODE",
-    obj: "OBJ", step: "STEP", stp: "STEP", amf: "AMF",
-  };
-  return map[ext] ?? "OTHER";
-}
+const THUMBNAIL_TYPES = new Set(["STL", "3MF", "OBJ"]);
 
 function isFileDrag(e: React.DragEvent): boolean {
   return Array.from(e.dataTransfer.types).some(
@@ -27,12 +19,6 @@ const TYPE_COLORS: Record<string, string> = {
   OBJ:   "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/50 dark:text-yellow-300 dark:border-yellow-800",
   STEP:  "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-800",
 };
-
-function formatBytes(b: number | null) {
-  if (!b) return "";
-  if (b < 1024 * 1024) return `${(b / 1024).toFixed(0)} KB`;
-  return `${(b / 1024 / 1024).toFixed(1)} MB`;
-}
 
 function TypeBadge({ type }: { type: string }) {
   const color = TYPE_COLORS[type] ?? "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
