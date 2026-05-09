@@ -246,6 +246,7 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   );
 
   return (
+    <>
     <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
 
       {/* Row 1 — always visible on all screen sizes */}
@@ -344,19 +345,21 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
         </nav>
       </div>
 
-      {/* Row 2 — mobile search bar.
-          Exit is handled by the Web Animations API (opacity + max-height
-          simultaneously), so no overflow-hidden is needed here at rest —
-          the dropdown is never clipped. */}
-      {mobileSearchMounted && (
-        <div ref={mobileSearchRef} className="md:hidden border-t border-gray-200 dark:border-gray-800 px-4 py-2">
-          <form ref={mobileFormRef} onSubmit={handleSubmit} className="relative">
-            <input ref={mobileInputRef} {...sharedInputProps} className="input text-base" />
-            {dropdownOpen && <Dropdown />}
-          </form>
-        </div>
-      )}
-
     </header>
+
+    {/* Row 2 — separate sticky element so Web Animations on it cannot
+        affect the sticky <header> above (iOS Safari bug workaround). */}
+    {mobileSearchMounted && (
+      <div
+        ref={mobileSearchRef}
+        className="md:hidden sticky top-16 z-40 bg-white/80 dark:bg-gray-950/80 backdrop-blur border-b border-gray-200 dark:border-gray-800 px-4 py-2"
+      >
+        <form ref={mobileFormRef} onSubmit={handleSubmit} className="relative">
+          <input ref={mobileInputRef} {...sharedInputProps} className="input text-base" />
+          {dropdownOpen && <Dropdown />}
+        </form>
+      </div>
+    )}
+    </>
   );
 }
