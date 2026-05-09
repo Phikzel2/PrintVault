@@ -39,10 +39,10 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mobileSearchFading, setMobileSearchFading] = useState(false);
-  const [mobileSearchHidden, setMobileSearchHidden] = useState(false);
+  const [mobileSearchMounted, setMobileSearchMounted] = useState(true);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
+  const exitAnimRef = useRef<Animation | null>(null);
   const scrolledRef = useRef(false);
-  const mobileTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Two refs: one per form instance (desktop row 1 / mobile row 2)
   const desktopInputRef = useRef<HTMLInputElement>(null);
@@ -77,22 +77,31 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
       const isScrolled = window.scrollY > 10;
       if (isScrolled === scrolledRef.current) return;
       scrolledRef.current = isScrolled;
-      clearTimeout(mobileTimerRef.current);
+
       if (isScrolled) {
         setDropdownOpen(false);
-        setMobileSearchFading(true);
-        mobileTimerRef.current = setTimeout(() => setMobileSearchHidden(true), 200);
+        const el = mobileSearchRef.current;
+        if (el) {
+          exitAnimRef.current?.cancel();
+          exitAnimRef.current = el.animate(
+            [
+              { opacity: "1", maxHeight: el.scrollHeight + "px", overflow: "hidden" },
+              { opacity: "0", maxHeight: "0px", overflow: "hidden" },
+            ],
+            { duration: 220, easing: "ease-in", fill: "forwards" }
+          );
+          exitAnimRef.current.onfinish = () => setMobileSearchMounted(false);
+        } else {
+          setMobileSearchMounted(false);
+        }
       } else {
-        setMobileSearchHidden(false);
-        // Wait two frames so the div is in the DOM before the opacity transition starts
-        requestAnimationFrame(() => requestAnimationFrame(() => setMobileSearchFading(false)));
+        exitAnimRef.current?.cancel();
+        exitAnimRef.current = null;
+        setMobileSearchMounted(true);
       }
     };
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      clearTimeout(mobileTimerRef.current);
-    };
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   // Native × clear button fires "search" event, not "change" — handle both inputs
@@ -336,13 +345,11 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
       </div>
 
       {/* Row 2 — mobile search bar.
-          No overflow-hidden anywhere near this row so the absolute dropdown
-          is never clipped. Fades out via opacity, then unmounts after the
-          transition so the height collapses cleanly without clipping. */}
-      {!mobileSearchHidden && (
-        <div className={`md:hidden border-t border-gray-200 dark:border-gray-800 px-4 py-2 transition-opacity duration-200 ${
-          mobileSearchFading ? "opacity-0 pointer-events-none" : "opacity-100"
-        }`}>
+          Exit is handled by the Web Animations API (opacity + max-height
+          simultaneously), so no overflow-hidden is needed here at rest —
+          the dropdown is never clipped. */}
+      {mobileSearchMounted && (
+        <div ref={mobileSearchRef} className="md:hidden border-t border-gray-200 dark:border-gray-800 px-4 py-2">
           <form ref={mobileFormRef} onSubmit={handleSubmit} className="relative">
             <input ref={mobileInputRef} {...sharedInputProps} className="input text-base" />
             {dropdownOpen && <Dropdown />}
