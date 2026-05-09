@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -12,6 +12,12 @@ import { Login } from "./pages/Login";
 import { UploadModal } from "./components/UploadModal";
 import { ImportModal } from "./components/ImportModal";
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
+
 function AppShell() {
   const navigate = useNavigate();
   const [showUpload, setShowUpload] = useState(false);
@@ -19,6 +25,7 @@ function AppShell() {
 
   return (
     <div className="min-h-screen">
+      <ScrollToTop />
       <Header onAddModel={() => setShowUpload(true)} onImport={() => setShowImport(true)} />
       <Routes>
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
