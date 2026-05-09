@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { importApi } from "../api/client";
 import type { ImportPreview } from "../types";
@@ -15,6 +15,8 @@ function formatSize(bytes: number | null) {
 
 export function ImportModal({ onClose }: Props) {
   const navigate = useNavigate();
+  const urlInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { urlInputRef.current?.focus(); }, []);
   const [url, setUrl] = useState("");
   const [fetching, setFetching] = useState(false);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
@@ -90,6 +92,7 @@ export function ImportModal({ onClose }: Props) {
           {/* URL row */}
           <div className="flex gap-2">
             <input
+              ref={urlInputRef}
               className="input flex-1 text-sm"
               placeholder="https://www.printables.com/model/... or thingiverse.com/thing:..."
               value={url}
