@@ -131,6 +131,17 @@ export function ImportModal({ onClose }: Props) {
                 </a>
               </p>
 
+              {preview.thumbnail_url && (
+                <div className="w-full h-44 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 shrink-0">
+                  <img
+                    src={preview.thumbnail_url}
+                    alt={preview.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }}
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="label">Name</label>
                 <input className="input text-sm" value={name} onChange={(e) => setName(e.target.value)} />
