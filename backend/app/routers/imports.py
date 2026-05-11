@@ -5,6 +5,7 @@ import time
 import uuid
 from pathlib import Path
 
+import html2text
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -54,6 +55,15 @@ class ImportRequest(BaseModel):
     thumbnail_url: str | None = None
 
 
+def _html_to_markdown(html: str | None) -> str | None:
+    if not html:
+        return html
+    h = html2text.HTML2Text()
+    h.ignore_links = False
+    h.body_width = 0
+    return h.handle(html).strip() or None
+
+
 def _detect_platform(url: str) -> tuple[str, str]:
     if m := re.search(r"thingiverse\.com/thing:(\d+)", url):
         return "thingiverse", m.group(1)
@@ -91,7 +101,7 @@ async def _fetch_thingiverse(thing_id: str) -> ImportPreview:
     return ImportPreview(
         platform="Thingiverse",
         name=thing.get("name", f"Thing {thing_id}"),
-        description=thing.get("description"),
+        description=_html_to_markdown(thing.get("description")),
         source_url=f"https://www.thingiverse.com/thing:{thing_id}",
         license=thing.get("license"),
         tags=[t["name"] for t in thing.get("tags", [])],
@@ -174,7 +184,7 @@ async def _fetch_printables(model_id: str) -> ImportPreview:
                 files.append(ImportFile(name=f["name"], download_url=url, size=f.get("fileSize"), file_type="STL"))
 
     license_name = (p.get("license") or {}).get("name")
-    description = p.get("description") or p.get("summary")
+    description = _html_to_markdown(p.get("description") or p.get("summary"))
     image_path = (p.get("image") or {}).get("filePath")
     thumb_url = f"https://media.printables.com/{image_path}" if image_path else None
 
