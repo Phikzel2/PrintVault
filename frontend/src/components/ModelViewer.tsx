@@ -176,7 +176,9 @@ function ThreeMFModel({ url }: { url: string }) {
 
   object.traverse((child) => {
     if ((child as THREE.Mesh).isMesh) {
-      (child as THREE.Mesh).material = new THREE.MeshStandardMaterial({ color: "#6366f1", roughness: 0.4, metalness: 0.1 });
+      const mesh = child as THREE.Mesh;
+      if (mesh.geometry) mesh.geometry.computeVertexNormals();
+      mesh.material = new THREE.MeshStandardMaterial({ color: "#6366f1", roughness: 0.4, metalness: 0.1 });
     }
   });
 
