@@ -188,7 +188,7 @@ export function ModelDetail() {
                 {model.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-3">
                     {model.tags.map((t) => (
-                      <Link key={t.id} to={`/?tag=${t.name}`} className="text-xs px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-400 rounded-full transition-colors">
+                      <Link key={t.id} to={`/?tag=${encodeURIComponent(t.name)}`} className="text-xs px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-400 rounded-full transition-colors">
                         {t.name}
                       </Link>
                     ))}
