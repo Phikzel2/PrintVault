@@ -130,7 +130,7 @@ export function ModelDetail() {
     <div className="max-w-7xl mx-auto px-4 py-6">
       <div className="flex flex-col lg:flex-row gap-6 lg:items-start">
         {/* Left: breadcrumb + viewer as one sticky column */}
-        <div className="lg:flex-1 flex flex-col gap-4 lg:sticky lg:top-[5.5rem] lg:h-[calc(100vh-7rem)]">
+        <div className="lg:flex-1 min-w-0 flex flex-col gap-4 lg:sticky lg:top-[5.5rem] lg:h-[calc(100vh-7rem)]">
           <Link to="/" className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -143,7 +143,7 @@ export function ModelDetail() {
         </div>
 
         {/* Metadata panel — page scrolls naturally */}
-        <div className="lg:w-[420px] flex flex-col gap-4 shrink-0 overflow-hidden">
+        <div className="lg:w-[420px] lg:min-w-[420px] lg:max-w-[420px] flex flex-col gap-4 shrink-0 overflow-hidden">
           {/* Header */}
           <div className="card p-4 overflow-hidden">
             {editing ? (
