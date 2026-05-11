@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
 import { modelsApi, filesApi, printersApi } from "../api/client";
 import { ModelViewer } from "../components/ModelViewer";
 import { AddFilesModal } from "../components/AddFilesModal";
@@ -179,7 +180,11 @@ export function ModelDetail() {
                     />
                   </div>
                 )}
-                {model.description && <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{model.description}</p>}
+                {model.description && (
+                  <div className="prose prose-sm dark:prose-invert prose-gray max-w-none mt-2 [&_a]:text-brand-400 [&_a]:no-underline hover:[&_a]:underline">
+                    <ReactMarkdown>{model.description}</ReactMarkdown>
+                  </div>
+                )}
                 {model.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-3">
                     {model.tags.map((t) => (
