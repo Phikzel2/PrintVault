@@ -22,20 +22,14 @@ function parseSearchInput(value: string): { text: string; tags: string[] } {
   return { text, tags };
 }
 
-function tagToToken(name: string) {
-  return name.includes(" ") ? `#"${name}"` : `#${name}`;
-}
-
 function getActiveToken(value: string, cursor: number) {
   const before = value.slice(0, cursor);
-  // Cursor inside a quoted tag: #"partial...
   const quotedMatch = before.match(/#"([^"]*)$/);
   if (quotedMatch) {
     const start = cursor - quotedMatch[0].length;
     const rest = value.slice(cursor).match(/^[^"]*"?/)?.[0] ?? "";
     return { partial: quotedMatch[1] + rest.replace(/"$/, ""), start, end: cursor + rest.length };
   }
-  // Cursor inside an unquoted tag: #partial
   const match = before.match(/#(\S*)$/);
   if (!match) return null;
   const start = cursor - match[0].length;
@@ -61,7 +55,6 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   const scrolledRef = useRef(false);
   const shouldAnimateInRef = useRef(false);
 
-  // Two refs: one per form instance (desktop row 1 / mobile row 2)
   const desktopInputRef = useRef<HTMLInputElement>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
   const desktopFormRef = useRef<HTMLFormElement>(null);
@@ -74,16 +67,13 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
       ? desktopInputRef.current
       : mobileInputRef.current;
 
-  const [search, setSearch] = useState(() => {
-    const text = searchParams.get("search") ?? "";
-    const tags = searchParams.getAll("tag");
-    return [text, ...tags.map(tagToToken)].filter(Boolean).join(" ");
-  });
+  // Chips come directly from URL params
+  const chipTags = searchParams.getAll("tag");
 
+  // Text input holds only the free-text portion
+  const [searchText, setSearchText] = useState(() => searchParams.get("search") ?? "");
   useEffect(() => {
-    const text = searchParams.get("search") ?? "";
-    const tags = searchParams.getAll("tag");
-    setSearch([text, ...tags.map(tagToToken)].filter(Boolean).join(" "));
+    setSearchText(searchParams.get("search") ?? "");
   }, [searchParams]);
 
   const fetchTags = () => tagsApi.list().then(r => setAllTags(r.data)).catch(() => {});
@@ -122,7 +112,6 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Animate the search row in after mount (when scrolling back to top)
   useEffect(() => {
     if (!mobileSearchMounted || !shouldAnimateInRef.current) return;
     shouldAnimateInRef.current = false;
@@ -139,13 +128,19 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
     });
   }, [mobileSearchMounted]);
 
-  // Native × clear button fires "search" event, not "change" — handle both inputs
   useEffect(() => {
     const inputs = [desktopInputRef.current, mobileInputRef.current].filter(Boolean);
-    const handler = (e: Event) => { if ((e.target as HTMLInputElement).value === "") navigate("/"); };
+    const handler = (e: Event) => {
+      if ((e.target as HTMLInputElement).value === "") {
+        const next = new URLSearchParams(searchParams);
+        next.delete("search");
+        next.delete("page");
+        navigate(next.toString() ? `/?${next.toString()}` : "/");
+      }
+    };
     inputs.forEach(i => i!.addEventListener("search", handler));
     return () => inputs.forEach(i => i!.removeEventListener("search", handler));
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -157,6 +152,15 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  const removeChip = (tagToRemove: string) => {
+    const next = new URLSearchParams(searchParams);
+    const remaining = chipTags.filter(t => t !== tagToRemove);
+    next.delete("tag");
+    next.delete("page");
+    remaining.forEach(t => next.append("tag", t));
+    navigate(next.toString() ? `/?${next.toString()}` : "/");
+  };
 
   const refreshSuggestions = (value: string, cursor: number) => {
     const token = getActiveToken(value, cursor);
@@ -176,30 +180,22 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   const selectSuggestion = (tag: Tag) => {
     const token = activeTokenRef.current;
     if (!token) return;
-    const before = search.slice(0, token.start);
-    const after = search.slice(token.end);
-    const suffix = after.startsWith(" ") || after === "" ? after : " " + after;
-    const newValue = (`${before}${tagToToken(tag.name)}${suffix}`).trimEnd() + " ";
-    setSearch(newValue);
+    const newText = (searchText.slice(0, token.start) + searchText.slice(token.end)).trim();
+    setSearchText(newText);
     setDropdownOpen(false);
 
-    const { text, tags } = parseSearchInput(newValue);
+    const allTagNames = [...new Set([...chipTags, tag.name.toLowerCase()])];
     const next = new URLSearchParams();
-    if (text) next.set("search", text);
-    tags.forEach(t => next.append("tag", t));
+    if (newText) next.set("search", newText);
+    allTagNames.forEach(t => next.append("tag", t));
     navigate(next.toString() ? `/?${next.toString()}` : "/");
 
-    const newCursor = before.length + 1 + tag.name.length + 1;
-    requestAnimationFrame(() => {
-      const input = activeInput();
-      input?.focus();
-      input?.setSelectionRange(newCursor, newCursor);
-    });
+    requestAnimationFrame(() => activeInput()?.focus());
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value, selectionStart } = e.target;
-    setSearch(value);
+    setSearchText(value);
     refreshSuggestions(value, selectionStart ?? value.length);
   };
 
@@ -241,23 +237,12 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setDropdownOpen(false);
-    const { text, tags } = parseSearchInput(search);
+    const { text, tags: typedTags } = parseSearchInput(searchText);
+    const allTagNames = [...new Set([...chipTags, ...typedTags])];
     const next = new URLSearchParams();
     if (text) next.set("search", text);
-    tags.forEach(t => next.append("tag", t));
-    const qs = next.toString();
-    navigate(qs ? `/?${qs}` : "/");
-  };
-
-  const sharedInputProps = {
-    type: "search" as const,
-    placeholder: "Search titles or #tags…",
-    value: search,
-    onChange: handleChange,
-    onKeyDown: handleKeyDown,
-    onFocus: fetchTags,
-    onClick: handleCursorMove,
-    onKeyUp: handleKeyUp,
+    allTagNames.forEach(t => next.append("tag", t));
+    navigate(next.toString() ? `/?${next.toString()}` : "/");
   };
 
   const Dropdown = () => (
@@ -280,6 +265,51 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
     </div>
   );
 
+  const ChipSearchBar = ({
+    formRef,
+    inputRef,
+  }: {
+    formRef: React.RefObject<HTMLFormElement>;
+    inputRef: React.RefObject<HTMLInputElement>;
+  }) => (
+    <form ref={formRef} onSubmit={handleSubmit} className="relative flex-1 max-w-xl">
+      <div
+        className="chip-input"
+        onClick={() => inputRef.current?.focus()}
+      >
+        {chipTags.map(tag => (
+          <span
+            key={tag}
+            className="flex items-center gap-1 bg-brand-600/20 text-brand-400 text-xs px-2 py-0.5 rounded-full shrink-0 max-w-[160px]"
+          >
+            <span className="truncate">{tag}</span>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); removeChip(tag); }}
+              className="shrink-0 hover:text-brand-200 leading-none text-sm"
+              aria-label={`Remove tag ${tag}`}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <input
+          ref={inputRef}
+          type="search"
+          placeholder={chipTags.length === 0 ? "Search titles or #tags…" : ""}
+          value={searchText}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          onFocus={fetchTags}
+          onClick={handleCursorMove}
+          onKeyUp={handleKeyUp}
+          className="flex-1 min-w-[80px] bg-transparent outline-none text-sm placeholder-gray-400 dark:placeholder-gray-500"
+        />
+      </div>
+      {dropdownOpen && <Dropdown />}
+    </form>
+  );
+
   return (
     <>
     <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
@@ -294,12 +324,11 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
         </Link>
 
         {/* Desktop search — hidden on mobile */}
-        <form ref={desktopFormRef} onSubmit={handleSubmit} className="hidden md:block flex-1 max-w-xl relative">
-          <input ref={desktopInputRef} {...sharedInputProps} className="input text-sm" />
-          {dropdownOpen && <Dropdown />}
-        </form>
+        <div className="hidden md:flex flex-1 max-w-xl">
+          <ChipSearchBar formRef={desktopFormRef} inputRef={desktopInputRef} />
+        </div>
 
-        {/* Nav — ml-auto pushes it right on mobile (no search bar in row 1) */}
+        {/* Nav */}
         <nav className="flex items-center gap-2 shrink-0 ml-auto md:ml-0">
           {onImport && user && (
             <button onClick={onImport} className="btn-secondary text-sm flex items-center gap-1.5">
@@ -386,10 +415,7 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
         ref={mobileSearchRef}
         className="md:hidden sticky top-16 z-40 bg-white/80 dark:bg-gray-950/80 backdrop-blur border-b border-gray-200 dark:border-gray-800 px-4 py-2"
       >
-        <form ref={mobileFormRef} onSubmit={handleSubmit} className="relative">
-          <input ref={mobileInputRef} {...sharedInputProps} className="input text-base" />
-          {dropdownOpen && <Dropdown />}
-        </form>
+        <ChipSearchBar formRef={mobileFormRef} inputRef={mobileInputRef} />
       </div>
     )}
     </>
