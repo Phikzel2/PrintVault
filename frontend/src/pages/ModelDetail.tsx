@@ -143,7 +143,7 @@ export function ModelDetail() {
         </div>
 
         {/* Metadata panel — page scrolls naturally */}
-        <div className="lg:w-[420px] flex flex-col gap-4 shrink-0">
+        <div className="lg:w-[420px] flex flex-col gap-4 shrink-0 overflow-hidden">
           {/* Header */}
           <div className="card p-4 overflow-hidden">
             {editing ? (
