@@ -181,7 +181,7 @@ export function ModelDetail() {
                   </div>
                 )}
                 {model.description && (
-                  <div className="prose prose-sm dark:prose-invert prose-gray max-w-none mt-2 [&_a]:text-brand-400 [&_a]:no-underline hover:[&_a]:underline">
+                  <div className="prose prose-sm dark:prose-invert prose-gray max-w-none mt-2 [&_a]:text-brand-400 [&_a]:no-underline hover:[&_a]:underline [&_img]:max-w-full [&_img]:rounded-lg [&_img]:h-auto overflow-hidden">
                     <ReactMarkdown>{model.description}</ReactMarkdown>
                   </div>
                 )}
