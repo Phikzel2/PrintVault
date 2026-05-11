@@ -131,12 +131,7 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   useEffect(() => {
     const inputs = [desktopInputRef.current, mobileInputRef.current].filter(Boolean);
     const handler = (e: Event) => {
-      if ((e.target as HTMLInputElement).value === "") {
-        const next = new URLSearchParams(searchParams);
-        next.delete("search");
-        next.delete("page");
-        navigate(next.toString() ? `/?${next.toString()}` : "/");
-      }
+      if ((e.target as HTMLInputElement).value === "") navigate("/");
     };
     inputs.forEach(i => i!.addEventListener("search", handler));
     return () => inputs.forEach(i => i!.removeEventListener("search", handler));
@@ -270,7 +265,7 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
       key={tag}
       className="flex items-center gap-1 bg-brand-600/20 text-brand-400 text-xs px-2 py-0.5 rounded-full shrink-0 max-w-[160px]"
     >
-      <span className="truncate">{tag}</span>
+      <span className="truncate">#{tag}</span>
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); removeChip(tag); }}
