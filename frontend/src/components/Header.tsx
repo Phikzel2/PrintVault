@@ -13,14 +13,29 @@ interface HeaderProps {
 function parseSearchInput(value: string): { text: string; tags: string[] } {
   const tags: string[] = [];
   const text = value
-    .replace(/#(\S+)/g, (_, t) => { tags.push(t.toLowerCase()); return ""; })
+    .replace(/#(?:"([^"]+)"|(\S+))/g, (_, quoted, plain) => {
+      tags.push((quoted ?? plain).toLowerCase());
+      return "";
+    })
     .replace(/\s+/g, " ")
     .trim();
   return { text, tags };
 }
 
+function tagToToken(name: string) {
+  return name.includes(" ") ? `#"${name}"` : `#${name}`;
+}
+
 function getActiveToken(value: string, cursor: number) {
   const before = value.slice(0, cursor);
+  // Cursor inside a quoted tag: #"partial...
+  const quotedMatch = before.match(/#"([^"]*)$/);
+  if (quotedMatch) {
+    const start = cursor - quotedMatch[0].length;
+    const rest = value.slice(cursor).match(/^[^"]*"?/)?.[0] ?? "";
+    return { partial: quotedMatch[1] + rest.replace(/"$/, ""), start, end: cursor + rest.length };
+  }
+  // Cursor inside an unquoted tag: #partial
   const match = before.match(/#(\S*)$/);
   if (!match) return null;
   const start = cursor - match[0].length;
@@ -62,13 +77,13 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   const [search, setSearch] = useState(() => {
     const text = searchParams.get("search") ?? "";
     const tags = searchParams.getAll("tag");
-    return [text, ...tags.map(t => `#${t}`)].filter(Boolean).join(" ");
+    return [text, ...tags.map(tagToToken)].filter(Boolean).join(" ");
   });
 
   useEffect(() => {
     const text = searchParams.get("search") ?? "";
     const tags = searchParams.getAll("tag");
-    setSearch([text, ...tags.map(t => `#${t}`)].filter(Boolean).join(" "));
+    setSearch([text, ...tags.map(tagToToken)].filter(Boolean).join(" "));
   }, [searchParams]);
 
   const fetchTags = () => tagsApi.list().then(r => setAllTags(r.data)).catch(() => {});
@@ -164,7 +179,7 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
     const before = search.slice(0, token.start);
     const after = search.slice(token.end);
     const suffix = after.startsWith(" ") || after === "" ? after : " " + after;
-    const newValue = (`${before}#${tag.name}${suffix}`).trimEnd() + " ";
+    const newValue = (`${before}${tagToToken(tag.name)}${suffix}`).trimEnd() + " ";
     setSearch(newValue);
     setDropdownOpen(false);
 
