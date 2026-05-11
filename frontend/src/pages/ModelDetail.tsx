@@ -6,6 +6,7 @@ import { ModelViewer } from "../components/ModelViewer";
 import { AddFilesModal } from "../components/AddFilesModal";
 import { FilesSection } from "../components/FilesSection";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import { formatDate } from "../utils/format";
 import type { PrintModel, Printer } from "../types";
 
@@ -27,6 +28,7 @@ export function ModelDetail() {
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [lightbox, setLightbox] = useState(false);
 
+  const { showToast } = useToast();
   const canEdit = user && model ? (model.owner_id === user.id || user.is_admin) : false;
 
   const loadModel = async () => {
@@ -60,11 +62,13 @@ export function ModelDetail() {
       tags: editData.tags.split(",").map((t) => t.trim()).filter(Boolean),
     });
     setEditing(false);
+    showToast("Changes saved");
     loadModel();
   };
 
   const deleteFile = async (fileId: number) => {
     await filesApi.delete(fileId);
+    showToast("File deleted");
     loadModel();
   };
 
@@ -89,6 +93,7 @@ export function ModelDetail() {
     setThumbnailUploading(true);
     try {
       await modelsApi.uploadThumbnailImage(modelId, file);
+      showToast("Thumbnail updated");
       loadModel();
     } catch {
       // ignore
@@ -103,6 +108,7 @@ export function ModelDetail() {
     setVisibilityBusy(true);
     try {
       await modelsApi.setVisibility(modelId, !model.is_public);
+      showToast(model.is_public ? "Made private" : "Made public");
       setModel({ ...model, is_public: !model.is_public });
     } finally {
       setVisibilityBusy(false);

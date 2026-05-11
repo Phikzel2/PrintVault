@@ -17,6 +17,7 @@ export default {
       animation: {
         "chip-in": "chip-in 0.15s ease-out",
         "loading-progress": "loading-progress 1.5s ease-out forwards",
+        "toast-in": "toast-in 0.2s ease-out",
       },
       keyframes: {
         "chip-in": {
@@ -28,6 +29,10 @@ export default {
           "30%": { width: "50%" },
           "70%": { width: "75%" },
           "100%": { width: "85%" },
+        },
+        "toast-in": {
+          "0%": { opacity: "0", transform: "translateY(10px) scale(0.95)" },
+          "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
         },
       },
     },

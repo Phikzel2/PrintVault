@@ -78,6 +78,26 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
     setSearchText(searchParams.get("search") ?? "");
   }, [searchParams]);
 
+  // "/" or Ctrl+K focuses the search input from anywhere
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(tag)) return;
+      if (e.key === "/" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        activeInput()?.focus();
+        activeInput()?.select();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        activeInput()?.focus();
+        activeInput()?.select();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
+
   // Debounced live search — fires 350ms after the user stops typing
   useEffect(() => {
     if (location.pathname !== "/") return;

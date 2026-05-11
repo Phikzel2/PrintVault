@@ -3,6 +3,7 @@ import { useDropzone } from "react-dropzone";
 import { modelsApi, printersApi, filesApi } from "../api/client";
 import { parseUploadError } from "../api/errors";
 import { getFileTypeLabel, formatBytes } from "../utils/format";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 import type { Printer } from "../types";
 
 interface UploadModalProps {
@@ -49,6 +50,8 @@ export function UploadModal({ initialFiles, onClose, onSuccess }: UploadModalPro
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEscapeKey(onClose);
 
   useEffect(() => {
     printersApi.list().then((r) => setPrinters(r.data)).catch(() => {});

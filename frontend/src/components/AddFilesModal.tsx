@@ -3,6 +3,7 @@ import { useDropzone } from "react-dropzone";
 import { modelsApi, printersApi, filesApi } from "../api/client";
 import { parseUploadError } from "../api/errors";
 import { getFileTypeLabel, formatBytes } from "../utils/format";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 import type { ModelFile, Printer } from "../types";
 
 interface AddFilesModalProps {
@@ -32,6 +33,7 @@ export function AddFilesModal({ modelId, existingFiles, onClose, onSuccess }: Ad
   const [error, setError] = useState<string | null>(null);
 
   const sourceOptions = existingFiles.filter((f) => SOURCE_TYPES.includes(f.file_type));
+  useEscapeKey(onClose);
 
   useEffect(() => {
     printersApi.list().then((r) => setPrinters(r.data)).catch(() => {});

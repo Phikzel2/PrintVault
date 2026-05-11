@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { importApi } from "../api/client";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 import type { ImportPreview } from "../types";
 
 interface Props {
   onClose: () => void;
+  onSuccess: (id: number) => void;
 }
 
 function formatSize(bytes: number | null) {
@@ -13,9 +14,9 @@ function formatSize(bytes: number | null) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export function ImportModal({ onClose }: Props) {
-  const navigate = useNavigate();
+export function ImportModal({ onClose, onSuccess }: Props) {
   const urlInputRef = useRef<HTMLInputElement>(null);
+  useEscapeKey(onClose);
   useEffect(() => { urlInputRef.current?.focus(); }, []);
   const [url, setUrl] = useState("");
   const [fetching, setFetching] = useState(false);
@@ -57,8 +58,7 @@ export function ImportModal({ onClose }: Props) {
         files: preview.files.filter((_, i) => selected.has(i)),
         thumbnail_url: preview.thumbnail_url,
       });
-      onClose();
-      navigate(`/models/${data.id}`);
+      onSuccess(data.id);
     } catch (e: any) {
       setError(e.response?.data?.detail ?? "Import failed");
       setImporting(false);

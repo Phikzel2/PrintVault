@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { ToastProvider, useToast } from "./context/ToastContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Header } from "./components/Header";
 import { Home } from "./pages/Home";
@@ -20,8 +21,23 @@ function ScrollToTop() {
 
 function AppShell() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [showUpload, setShowUpload] = useState(false);
   const [showImport, setShowImport] = useState(false);
+
+  // Press "n" anywhere to open the Add Model modal
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (showUpload || showImport) return;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes((e.target as HTMLElement).tagName)) return;
+      if (e.key === "n" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setShowUpload(true);
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [showUpload, showImport]);
 
   return (
     <div className="min-h-screen">
@@ -39,11 +55,21 @@ function AppShell() {
           onClose={() => setShowUpload(false)}
           onSuccess={(id) => {
             setShowUpload(false);
+            showToast("Model added");
             navigate(`/models/${id}`);
           }}
         />
       )}
-      {showImport && <ImportModal onClose={() => setShowImport(false)} />}
+      {showImport && (
+        <ImportModal
+          onClose={() => setShowImport(false)}
+          onSuccess={(id) => {
+            setShowImport(false);
+            showToast("Model imported");
+            navigate(`/models/${id}`);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -52,10 +78,12 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/*" element={<AppShell />} />
-        </Routes>
+        <ToastProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/*" element={<AppShell />} />
+          </Routes>
+        </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
   );

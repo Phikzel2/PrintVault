@@ -1,9 +1,18 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { modelsApi, tagsApi } from "../api/client";
 import { ModelCard } from "../components/ModelCard";
 import { UploadModal } from "../components/UploadModal";
+import { useToast } from "../context/ToastContext";
 import type { PrintModelSummary, Tag } from "../types";
+
+const FILE_TYPES = ["STL", "3MF", "GCODE", "OBJ", "STEP"];
+
+function isFileDrag(e: React.DragEvent): boolean {
+  return Array.from(e.dataTransfer.types).some(
+    (t) => t === "Files" || t === "application/x-moz-file",
+  );
+}
 
 function LoadingBar({ loading }: { loading: boolean }) {
   const [show, setShow] = useState(false);
@@ -31,16 +40,9 @@ function LoadingBar({ loading }: { loading: boolean }) {
   );
 }
 
-const FILE_TYPES = ["STL", "3MF", "GCODE", "OBJ", "STEP"];
-
-function isFileDrag(e: React.DragEvent): boolean {
-  return Array.from(e.dataTransfer.types).some(
-    (t) => t === "Files" || t === "application/x-moz-file",
-  );
-}
-
 export function Home() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const search = searchParams.get("search") ?? "";
@@ -49,19 +51,26 @@ export function Home() {
   const activeType = searchParams.get("type") ?? "";
   const activeVisibility = searchParams.get("visibility") ?? "";
   const activeSort = searchParams.get("sort") ?? "newest";
-  const page = Number(searchParams.get("page") ?? "1");
+
+  const filtersKey = [search, activeTagsKey, activeType, activeVisibility, activeSort].join("|");
 
   const [models, setModels] = useState<PrintModelSummary[]>([]);
   const [total, setTotal] = useState(0);
-  const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [tags, setTags] = useState<Tag[]>([]);
   const [showUpload, setShowUpload] = useState(false);
   const [externalDrag, setExternalDrag] = useState(false);
   const [dropFiles, setDropFiles] = useState<File[] | undefined>(undefined);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const currentPageRef = useRef(1);
+  const loadIdRef = useRef(0);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const loadPage = useCallback(async (page: number, isFirst: boolean) => {
+    const id = ++loadIdRef.current;
+    if (isFirst) setLoading(true); else setLoadingMore(true);
     try {
       const params: Record<string, any> = { page, page_size: 24 };
       if (search) params.search = search;
@@ -70,15 +79,39 @@ export function Home() {
       if (activeVisibility) params.visibility = activeVisibility;
       if (activeSort) params.sort = activeSort;
       const { data } = await modelsApi.list(params);
-      setModels(data.items);
+      if (loadIdRef.current !== id) return;
+      setModels(prev => isFirst ? data.items : [...prev, ...data.items]);
       setTotal(data.total);
-      setPages(data.pages);
+      setHasMore(page < data.pages);
+      currentPageRef.current = page;
     } finally {
-      setLoading(false);
+      if (loadIdRef.current === id) {
+        if (isFirst) setLoading(false); else setLoadingMore(false);
+      }
     }
-  }, [search, activeTagsKey, activeType, activeVisibility, activeSort, page]);
+  }, [filtersKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    currentPageRef.current = 1;
+    loadPage(1, true);
+  }, [loadPage]);
+
+  // Infinite scroll sentinel
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasMore && !loadingMore && !loading) {
+          loadPage(currentPageRef.current + 1, false);
+        }
+      },
+      { rootMargin: "300px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading, loadPage]);
+
   useEffect(() => {
     tagsApi.list().then((r) => setTags(r.data)).catch(() => {});
   }, []);
@@ -111,6 +144,8 @@ export function Home() {
     }
   };
 
+  const hasActiveFilters = search || activeTags.length > 0 || activeType || activeVisibility;
+
   return (
     <div
       onDragEnter={handlePageDragEnter}
@@ -119,6 +154,7 @@ export function Home() {
       onDrop={handlePageDrop}
     >
       <LoadingBar loading={loading} />
+
       {/* Full-page drop overlay */}
       {externalDrag && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm pointer-events-none">
@@ -235,9 +271,18 @@ export function Home() {
               </svg>
               <p className="text-lg font-medium text-gray-500">No models found</p>
               <p className="text-sm mt-1">Try a different search or add your first model</p>
-              <button onClick={() => setShowUpload(true)} className="btn-primary mt-6">
-                Add First Model
-              </button>
+              {hasActiveFilters ? (
+                <button
+                  onClick={() => setSearchParams({})}
+                  className="btn-secondary mt-4 text-sm"
+                >
+                  Clear all filters
+                </button>
+              ) : (
+                <button onClick={() => setShowUpload(true)} className="btn-primary mt-6">
+                  Add First Model
+                </button>
+              )}
             </div>
           ) : (
             <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 transition-opacity duration-150 ${loading ? "opacity-50" : "opacity-100"}`}>
@@ -247,19 +292,11 @@ export function Home() {
             </div>
           )}
 
-          {pages > 1 && (
-            <div className="flex justify-center gap-2 mt-8">
-              {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setParam("page", String(p))}
-                  className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                    p === page ? "bg-brand-600 text-white" : "bg-gray-200 text-gray-700 hover:text-gray-900 dark:bg-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
+          {/* Infinite scroll sentinel */}
+          <div ref={sentinelRef} className="h-1 mt-4" />
+          {loadingMore && (
+            <div className="flex justify-center py-8">
+              <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
             </div>
           )}
         </main>
@@ -272,6 +309,7 @@ export function Home() {
           onSuccess={(id) => {
             setShowUpload(false);
             setDropFiles(undefined);
+            showToast("Model added");
             navigate(`/models/${id}`);
           }}
         />
