@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useLoader } from "@react-three/fiber";
 import { OrbitControls, Center, Bounds, useBounds, useProgress, Html } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
@@ -173,17 +173,26 @@ function STLModel({ url }: { url: string }) {
 
 function ThreeMFModel({ url }: { url: string }) {
   const object = useLoader(ThreeMFLoader as any, url) as THREE.Group;
+
   object.traverse((child) => {
     if ((child as THREE.Mesh).isMesh) {
-      const mesh = child as THREE.Mesh;
-      mesh.material = new THREE.MeshStandardMaterial({ color: "#6366f1", roughness: 0.4, metalness: 0.1 });
+      (child as THREE.Mesh).material = new THREE.MeshStandardMaterial({ color: "#6366f1", roughness: 0.4, metalness: 0.1 });
     }
   });
+
+  // 3MF files embed build-plate coordinates so the group origin is way off.
+  // Compute the bounding box and negate the center to shift it to the origin.
+  const offset = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(object);
+    const c = box.getCenter(new THREE.Vector3());
+    return [-c.x, -c.y, -c.z] as [number, number, number];
+  }, [object]);
+
   return (
-    <Center>
+    <group position={offset}>
       <primitive object={object} castShadow />
       <FitOnLoad />
-    </Center>
+    </group>
   );
 }
 
