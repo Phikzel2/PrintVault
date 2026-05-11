@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { PrintModelSummary } from "../types";
 import { modelsApi } from "../api/client";
@@ -19,6 +20,7 @@ function FileBadge({ label, count, color }: { label: string; count: number; colo
 
 export function ModelCard({ model }: ModelCardProps) {
   const { user } = useAuth();
+  const [imgLoaded, setImgLoaded] = useState(false);
   const thumbUrl = model.thumbnail_path ?? null;
   const showPublicBadge = model.is_public;
 
@@ -32,10 +34,9 @@ export function ModelCard({ model }: ModelCardProps) {
           <img
             src={thumbUrl}
             alt={model.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
+            onLoad={() => setImgLoaded(true)}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            className={`w-full h-full object-cover group-hover:scale-105 transition-[transform,opacity] duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600">

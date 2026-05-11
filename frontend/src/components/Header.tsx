@@ -69,12 +69,29 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
 
   // Chips come directly from URL params
   const chipTags = searchParams.getAll("tag");
+  const chipTagsRef = useRef(chipTags);
+  useEffect(() => { chipTagsRef.current = chipTags; }, [chipTags]);
 
   // Text input holds only the free-text portion
   const [searchText, setSearchText] = useState(() => searchParams.get("search") ?? "");
   useEffect(() => {
     setSearchText(searchParams.get("search") ?? "");
   }, [searchParams]);
+
+  // Debounced live search — fires 350ms after the user stops typing
+  useEffect(() => {
+    if (location.pathname !== "/") return;
+    if (getActiveToken(searchText, searchText.length)) return;
+    const timer = setTimeout(() => {
+      const { text, tags: typedTags } = parseSearchInput(searchText);
+      const allTagNames = [...new Set([...chipTagsRef.current, ...typedTags])];
+      const next = new URLSearchParams();
+      if (text) next.set("search", text);
+      allTagNames.forEach(t => next.append("tag", t));
+      navigate(next.toString() ? `/?${next.toString()}` : "/");
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchText, navigate, location.pathname]);
 
   const fetchTags = () => tagsApi.list().then(r => setAllTags(r.data)).catch(() => {});
   useEffect(() => { fetchTags(); }, []);
@@ -267,7 +284,7 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   const chipEls = chipTags.map(tag => (
     <span
       key={tag}
-      className="flex items-center gap-1 bg-brand-600/20 text-brand-400 text-xs px-2 py-0.5 rounded-full shrink-0 max-w-[160px]"
+      className="flex items-center gap-1 bg-brand-600/20 text-brand-400 text-xs px-2 py-0.5 rounded-full shrink-0 max-w-[160px] animate-chip-in"
     >
       <span className="truncate">#{tag}</span>
       <button

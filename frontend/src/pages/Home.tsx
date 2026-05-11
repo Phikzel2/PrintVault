@@ -5,6 +5,32 @@ import { ModelCard } from "../components/ModelCard";
 import { UploadModal } from "../components/UploadModal";
 import type { PrintModelSummary, Tag } from "../types";
 
+function LoadingBar({ loading }: { loading: boolean }) {
+  const [show, setShow] = useState(false);
+  const [complete, setComplete] = useState(false);
+
+  useEffect(() => {
+    if (loading) {
+      setComplete(false);
+      setShow(true);
+    } else {
+      setComplete(true);
+      const t = setTimeout(() => setShow(false), 400);
+      return () => clearTimeout(t);
+    }
+  }, [loading]);
+
+  if (!show) return null;
+  return (
+    <div className="fixed top-0 left-0 right-0 h-0.5 z-[60] overflow-hidden">
+      <div className={complete
+        ? "h-full bg-brand-500 w-full transition-[width,opacity] duration-300 opacity-0"
+        : "h-full bg-brand-500 animate-loading-progress"
+      } />
+    </div>
+  );
+}
+
 const FILE_TYPES = ["STL", "3MF", "GCODE", "OBJ", "STEP"];
 
 function isFileDrag(e: React.DragEvent): boolean {
@@ -92,6 +118,7 @@ export function Home() {
       onDragLeave={handlePageDragLeave}
       onDrop={handlePageDrop}
     >
+      <LoadingBar loading={loading} />
       {/* Full-page drop overlay */}
       {externalDrag && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm pointer-events-none">
@@ -213,7 +240,7 @@ export function Home() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 transition-opacity duration-150 ${loading ? "opacity-50" : "opacity-100"}`}>
               {models.map((m) => (
                 <ModelCard key={m.id} model={m} />
               ))}

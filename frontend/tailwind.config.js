@@ -14,6 +14,22 @@ export default {
           700: "#4338ca",
         },
       },
+      animation: {
+        "chip-in": "chip-in 0.15s ease-out",
+        "loading-progress": "loading-progress 1.5s ease-out forwards",
+      },
+      keyframes: {
+        "chip-in": {
+          "0%": { opacity: "0", transform: "scale(0.75)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
+        "loading-progress": {
+          "0%": { width: "0%" },
+          "30%": { width: "50%" },
+          "70%": { width: "75%" },
+          "100%": { width: "85%" },
+        },
+      },
     },
   },
   plugins: [require("@tailwindcss/typography")],
