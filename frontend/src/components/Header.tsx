@@ -205,6 +205,11 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && searchText === "" && chipTags.length > 0) {
+      e.preventDefault();
+      removeChip(chipTags[chipTags.length - 1]);
+      return;
+    }
     if (!dropdownOpen) return;
     switch (e.key) {
       case "ArrowDown":
