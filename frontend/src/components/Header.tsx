@@ -245,7 +245,7 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
     navigate(next.toString() ? `/?${next.toString()}` : "/");
   };
 
-  const Dropdown = () => (
+  const dropdownEl = dropdownOpen ? (
     <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl py-1 z-50">
       {suggestions.map((tag, i) => (
         <button
@@ -263,52 +263,36 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
         </button>
       ))}
     </div>
-  );
+  ) : null;
 
-  const ChipSearchBar = ({
-    formRef,
-    inputRef,
-  }: {
-    formRef: React.RefObject<HTMLFormElement>;
-    inputRef: React.RefObject<HTMLInputElement>;
-  }) => (
-    <form ref={formRef} onSubmit={handleSubmit} className="relative flex-1 max-w-xl">
-      <div
-        className="chip-input"
-        onClick={() => inputRef.current?.focus()}
+  const chipEls = chipTags.map(tag => (
+    <span
+      key={tag}
+      className="flex items-center gap-1 bg-brand-600/20 text-brand-400 text-xs px-2 py-0.5 rounded-full shrink-0 max-w-[160px]"
+    >
+      <span className="truncate">{tag}</span>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); removeChip(tag); }}
+        className="shrink-0 hover:text-brand-200 leading-none text-sm"
+        aria-label={`Remove tag ${tag}`}
       >
-        {chipTags.map(tag => (
-          <span
-            key={tag}
-            className="flex items-center gap-1 bg-brand-600/20 text-brand-400 text-xs px-2 py-0.5 rounded-full shrink-0 max-w-[160px]"
-          >
-            <span className="truncate">{tag}</span>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); removeChip(tag); }}
-              className="shrink-0 hover:text-brand-200 leading-none text-sm"
-              aria-label={`Remove tag ${tag}`}
-            >
-              ×
-            </button>
-          </span>
-        ))}
-        <input
-          ref={inputRef}
-          type="search"
-          placeholder={chipTags.length === 0 ? "Search titles or #tags…" : ""}
-          value={searchText}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          onFocus={fetchTags}
-          onClick={handleCursorMove}
-          onKeyUp={handleKeyUp}
-          className="flex-1 min-w-[80px] bg-transparent outline-none text-sm placeholder-gray-400 dark:placeholder-gray-500"
-        />
-      </div>
-      {dropdownOpen && <Dropdown />}
-    </form>
-  );
+        ×
+      </button>
+    </span>
+  ));
+
+  const inputProps = {
+    type: "search" as const,
+    placeholder: chipTags.length === 0 ? "Search titles or #tags…" : "",
+    value: searchText,
+    onChange: handleChange,
+    onKeyDown: handleKeyDown,
+    onFocus: fetchTags,
+    onClick: handleCursorMove,
+    onKeyUp: handleKeyUp,
+    className: "flex-1 min-w-[80px] bg-transparent outline-none text-sm placeholder-gray-400 dark:placeholder-gray-500",
+  };
 
   return (
     <>
@@ -324,9 +308,13 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
         </Link>
 
         {/* Desktop search — hidden on mobile */}
-        <div className="hidden md:flex flex-1 max-w-xl">
-          <ChipSearchBar formRef={desktopFormRef} inputRef={desktopInputRef} />
-        </div>
+        <form ref={desktopFormRef} onSubmit={handleSubmit} className="hidden md:flex relative flex-1 max-w-xl">
+          <div className="chip-input" onClick={() => desktopInputRef.current?.focus()}>
+            {chipEls}
+            <input ref={desktopInputRef} {...inputProps} />
+          </div>
+          {dropdownEl}
+        </form>
 
         {/* Nav */}
         <nav className="flex items-center gap-2 shrink-0 ml-auto md:ml-0">
@@ -415,7 +403,13 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
         ref={mobileSearchRef}
         className="md:hidden sticky top-16 z-40 bg-white/80 dark:bg-gray-950/80 backdrop-blur border-b border-gray-200 dark:border-gray-800 px-4 py-2"
       >
-        <ChipSearchBar formRef={mobileFormRef} inputRef={mobileInputRef} />
+        <form ref={mobileFormRef} onSubmit={handleSubmit} className="relative">
+          <div className="chip-input" onClick={() => mobileInputRef.current?.focus()}>
+            {chipEls}
+            <input ref={mobileInputRef} {...inputProps} />
+          </div>
+          {dropdownEl}
+        </form>
       </div>
     )}
     </>
