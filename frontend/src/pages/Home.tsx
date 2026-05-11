@@ -22,6 +22,7 @@ export function Home() {
   const activeTagsKey = activeTags.join(",");
   const activeType = searchParams.get("type") ?? "";
   const activeVisibility = searchParams.get("visibility") ?? "";
+  const activeSort = searchParams.get("sort") ?? "newest";
   const page = Number(searchParams.get("page") ?? "1");
 
   const [models, setModels] = useState<PrintModelSummary[]>([]);
@@ -41,6 +42,7 @@ export function Home() {
       if (activeTags.length) params.tag = activeTags;
       if (activeType) params.file_type = activeType;
       if (activeVisibility) params.visibility = activeVisibility;
+      if (activeSort) params.sort = activeSort;
       const { data } = await modelsApi.list(params);
       setModels(data.items);
       setTotal(data.total);
@@ -48,7 +50,7 @@ export function Home() {
     } finally {
       setLoading(false);
     }
-  }, [search, activeTagsKey, activeType, activeVisibility, page]);
+  }, [search, activeTagsKey, activeType, activeVisibility, activeSort, page]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
@@ -171,14 +173,26 @@ export function Home() {
 
         {/* Main content */}
         <main className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-gray-500">
+          <div className="flex items-center justify-between mb-4 gap-3">
+            <p className="text-sm text-gray-500 shrink-0">
               {loading ? "Loading..." : `${total} model${total !== 1 ? "s" : ""}`}
               {search && <span> matching "{search}"</span>}
             </p>
-            <button onClick={() => setShowUpload(true)} className="btn-primary text-sm md:hidden">
-              + Add
-            </button>
+            <div className="flex items-center gap-2 ml-auto">
+              <select
+                value={activeSort}
+                onChange={(e) => setParam("sort", e.target.value === "newest" ? "" : e.target.value)}
+                className="text-sm bg-transparent border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 rounded-lg px-2 py-1 cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 transition-colors focus:outline-none focus:ring-1 focus:ring-brand-500"
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="name_asc">Name A→Z</option>
+                <option value="name_desc">Name Z→A</option>
+              </select>
+              <button onClick={() => setShowUpload(true)} className="btn-primary text-sm md:hidden">
+                + Add
+              </button>
+            </div>
           </div>
 
           {loading ? (

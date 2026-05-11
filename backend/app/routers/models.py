@@ -79,6 +79,7 @@ def list_models(
     visibility: str = Query(None),  # "public" | "private"
     page: int = Query(1, ge=1),
     page_size: int = Query(24, ge=1, le=100),
+    sort: str = Query("newest"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -112,9 +113,15 @@ def list_models(
     if file_type:
         q = q.filter(models.PrintModel.files.any(models.ModelFile.file_type == file_type.upper()))
 
+    order = {
+        "oldest": models.PrintModel.created_at.asc(),
+        "name_asc": models.PrintModel.name.asc(),
+        "name_desc": models.PrintModel.name.desc(),
+    }.get(sort, models.PrintModel.created_at.desc())
+
     total = q.count()
     items = (
-        q.order_by(models.PrintModel.created_at.desc())
+        q.order_by(order)
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()
