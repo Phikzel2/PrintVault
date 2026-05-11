@@ -149,10 +149,9 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   }, []);
 
   const removeChip = (tagToRemove: string) => {
-    const next = new URLSearchParams(searchParams);
     const remaining = chipTags.filter(t => t !== tagToRemove);
-    next.delete("tag");
-    next.delete("page");
+    const next = new URLSearchParams();
+    if (searchText) next.set("search", searchText);
     remaining.forEach(t => next.append("tag", t));
     navigate(next.toString() ? `/?${next.toString()}` : "/");
   };
