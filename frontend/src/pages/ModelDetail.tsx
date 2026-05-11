@@ -6,6 +6,7 @@ import { ModelViewer } from "../components/ModelViewer";
 import { AddFilesModal } from "../components/AddFilesModal";
 import { FilesSection } from "../components/FilesSection";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { useToast } from "../context/ToastContext";
 import { formatDate } from "../utils/format";
 import type { PrintModel, Printer } from "../types";
@@ -15,6 +16,7 @@ export function ModelDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { theme } = useTheme();
   const modelId = Number(id);
 
   const [model, setModel] = useState<PrintModel | null>(null);
@@ -179,7 +181,7 @@ export function ModelDetail() {
                 {model.thumbnail_path && (
                   <div className="mt-3 -mx-4 overflow-hidden rounded-none">
                     <img
-                      src={`${modelsApi.thumbnailUrl(modelId)}?v=${encodeURIComponent(model.thumbnail_path)}`}
+                      src={`${modelsApi.thumbnailUrl(modelId)}?v=${encodeURIComponent(model.thumbnail_path)}&theme=${theme}`}
                       alt={model.name}
                       onClick={() => setLightbox(true)}
                       className="w-full object-contain max-h-40 cursor-zoom-in"
@@ -333,7 +335,7 @@ export function ModelDetail() {
           onClick={() => setLightbox(false)}
         >
           <img
-            src={`${modelsApi.thumbnailUrl(modelId)}?v=${encodeURIComponent(model.thumbnail_path)}`}
+            src={`${modelsApi.thumbnailUrl(modelId)}?v=${encodeURIComponent(model.thumbnail_path)}&theme=${theme}`}
             alt={model.name}
             className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
           />

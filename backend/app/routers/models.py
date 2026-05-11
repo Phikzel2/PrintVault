@@ -254,13 +254,19 @@ def set_visibility(
 
 
 @router.get("/{model_id}/thumbnail")
-def get_thumbnail(model_id: int, db: Session = Depends(get_db)):
+def get_thumbnail(model_id: int, theme: str = Query("dark"), db: Session = Depends(get_db)):
     # No auth required — thumbnails are served to <img> tags that can't send Bearer tokens
     model = db.query(models.PrintModel).filter(models.PrintModel.id == model_id).first()
     if not model:
         raise HTTPException(status_code=404, detail="Model not found")
-    thumb_path = Path(settings.upload_dir) / "models" / str(model_id) / "thumbnail.jpg"
-    if not thumb_path.exists():
+    model_dir = Path(settings.upload_dir) / "models" / str(model_id)
+    themed = model_dir / f"thumbnail_{theme}.jpg"
+    generic = model_dir / "thumbnail.jpg"
+    if themed.exists():
+        thumb_path = themed
+    elif generic.exists():
+        thumb_path = generic
+    else:
         raise HTTPException(status_code=404, detail="No thumbnail")
     return FileResponse(
         str(thumb_path),
@@ -294,8 +300,10 @@ def set_thumbnail(
     if db_file.file_type not in ("STL", "3MF", "OBJ"):
         raise HTTPException(status_code=400, detail="File type does not support thumbnail generation")
 
-    thumb_path = str(Path(settings.upload_dir) / "models" / str(model_id) / "thumbnail.jpg")
-    if not generate_thumbnail(db_file.file_path, thumb_path):
+    model_dir = Path(settings.upload_dir) / "models" / str(model_id)
+    ok_dark = generate_thumbnail(db_file.file_path, str(model_dir / "thumbnail_dark.jpg"), style="dark")
+    ok_light = generate_thumbnail(db_file.file_path, str(model_dir / "thumbnail_light.jpg"), style="light")
+    if not ok_dark and not ok_light:
         raise HTTPException(status_code=500, detail="Thumbnail generation failed")
 
     model.thumbnail_path = f"/api/models/{model_id}/thumbnail?v={int(time.time())}"

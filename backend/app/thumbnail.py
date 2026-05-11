@@ -6,11 +6,28 @@ logger = logging.getLogger(__name__)
 
 SUPPORTED_FOR_THUMBNAIL = {".stl", ".3mf", ".obj"}
 
+STYLES = {
+    "dark": {
+        "bg": (17, 24, 39),
+        "base": [79.0, 70.0, 229.0],
+        "brightness_floor": 0.35,
+        "brightness_range": 0.65,
+    },
+    "light": {
+        "bg": (245, 246, 250),
+        "base": [79.0, 70.0, 229.0],
+        "brightness_floor": 0.45,
+        "brightness_range": 0.55,
+    },
+}
 
-def generate_thumbnail(file_path: str, output_path: str) -> bool:
+
+def generate_thumbnail(file_path: str, output_path: str, style: str = "dark") -> bool:
     ext = Path(file_path).suffix.lower()
     if ext not in SUPPORTED_FOR_THUMBNAIL:
         return False
+
+    style_cfg = STYLES.get(style, STYLES["dark"])
 
     try:
         import trimesh
@@ -80,12 +97,14 @@ def generate_thumbnail(file_path: str, output_path: str) -> bool:
         light = np.array([0.5, 0.7, 1.0])
         light /= np.linalg.norm(light)
         diffuse = np.clip(normals @ light, 0, 1)
-        brightness = np.nan_to_num(0.35 + 0.65 * diffuse, nan=0.5)
+        brightness = np.nan_to_num(
+            style_cfg["brightness_floor"] + style_cfg["brightness_range"] * diffuse, nan=0.5
+        )
 
         # Z-buffer: for each pixel keep the colour of the nearest (highest z) face
         zbuf    = np.full((H, W), -np.inf, dtype=np.float64)
-        img_arr = np.full((H, W, 3), (17, 24, 39), dtype=np.uint8)
-        base    = np.array([79.0, 70.0, 229.0])  # #4f46e5
+        img_arr = np.full((H, W, 3), style_cfg["bg"], dtype=np.uint8)
+        base    = np.array(style_cfg["base"])  # #4f46e5
 
         for fi in range(len(faces)):
             f = faces[fi]

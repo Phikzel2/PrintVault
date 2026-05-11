@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import type { PrintModelSummary } from "../types";
 import { modelsApi } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { formatDate } from "../utils/format";
 
 interface ModelCardProps {
@@ -20,8 +21,9 @@ function FileBadge({ label, count, color }: { label: string; count: number; colo
 
 export function ModelCard({ model }: ModelCardProps) {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [imgLoaded, setImgLoaded] = useState(false);
-  const thumbUrl = model.thumbnail_path ?? null;
+  const thumbUrl = model.thumbnail_path ? `${model.thumbnail_path}&theme=${theme}` : null;
   const showPublicBadge = model.is_public;
 
   return (
