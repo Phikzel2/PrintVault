@@ -58,6 +58,10 @@ class ImportRequest(BaseModel):
 def _html_to_markdown(html: str | None) -> str | None:
     if not html:
         return html
+    # If no HTML tags are present, the content is already plain-text/Markdown —
+    # passing it through html2text would collapse newlines as HTML whitespace.
+    if not re.search(r"<[a-zA-Z][^>]*>", html):
+        return html.strip() or None
     h = html2text.HTML2Text()
     h.ignore_links = False
     h.body_width = 0
