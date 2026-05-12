@@ -256,10 +256,10 @@ function SourceGroup({
           : "border-transparent"
       }`}
     >
-      {/* Source file header */}
-      <div className="flex items-center gap-2 px-2 py-2 select-none group relative">
+      {/* Source file header — entire row is clickable so mobile tap fires on first touch */}
+      <div className="flex items-center gap-2 px-2 py-2 select-none group relative cursor-pointer" onClick={onToggle}>
         <button
-          onClick={onToggle}
+          onClick={(e) => { e.stopPropagation(); onToggle(); }}
           className="btn-ghost p-1 rounded shrink-0 text-gray-500 flex items-center gap-1"
         >
           <svg
@@ -344,7 +344,7 @@ export function FilesSection({
   modelId, files, printers,
   onDelete, onPrinterChange, onSourceChange, onUploadSuccess, onAddFiles,
 }: FilesSectionProps) {
-  const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<number | "unlinked" | null>(null);
   const [externalDrag, setExternalDrag] = useState(false);
@@ -378,7 +378,7 @@ export function FilesSection({
   }
 
   const toggle = (id: number) =>
-    setCollapsed((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+    setExpanded((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
   const uploadFiles = async (fileList: File[], sourceFileId: number | null) => {
     if (!fileList.length) return;
@@ -498,7 +498,7 @@ export function FilesSection({
             gcodes={gcodesBySource[sf.id] ?? []}
             printers={printers}
             isDropTarget={dropTarget === sf.id}
-            isCollapsed={collapsed.has(sf.id)}
+            isCollapsed={!expanded.has(sf.id)}
             activeDrag={activeDrag}
             draggingId={draggingId}
             externalDrag={anyExternalDrag}
