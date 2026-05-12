@@ -58,6 +58,10 @@ def _check_upload_dir():
 
 app = FastAPI(title="PrintVault", version="2.0.0", lifespan=lifespan, redirect_slashes=False)
 
+# Trust X-Forwarded-For / X-Forwarded-Proto from upstream reverse proxy
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
