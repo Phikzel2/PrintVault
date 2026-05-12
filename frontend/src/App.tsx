@@ -34,6 +34,10 @@ function AppShell() {
         e.preventDefault();
         setShowUpload(true);
       }
+      if (e.key === "i" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setShowImport(true);
+      }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
