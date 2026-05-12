@@ -50,7 +50,7 @@ export function Home() {
   const activeTagsKey = activeTags.join(",");
   const activeType = searchParams.get("type") ?? "";
   const activeVisibility = searchParams.get("visibility") ?? "";
-  const activeSort = searchParams.get("sort") ?? "newest";
+  const activeSort = searchParams.get("sort") ?? localStorage.getItem("sort") ?? "newest";
 
   const filtersKey = [search, activeTagsKey, activeType, activeVisibility, activeSort].join("|");
 
@@ -244,7 +244,11 @@ export function Home() {
             <div className="flex items-center gap-2 ml-auto">
               <select
                 value={activeSort}
-                onChange={(e) => setParam("sort", e.target.value === "newest" ? "" : e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  localStorage.setItem("sort", val);
+                  setParam("sort", val === "newest" ? "" : val);
+                }}
                 className="text-sm bg-transparent border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 rounded-lg px-2 py-1 cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 transition-colors focus:outline-none focus:ring-1 focus:ring-brand-500"
               >
                 <option value="newest">Newest first</option>
