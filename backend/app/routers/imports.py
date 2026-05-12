@@ -58,14 +58,21 @@ class ImportRequest(BaseModel):
 def _html_to_markdown(html: str | None) -> str | None:
     if not html:
         return html
-    # If no HTML tags are present, the content is already plain-text/Markdown —
-    # passing it through html2text would collapse newlines as HTML whitespace.
+    # Pure plain-text / Markdown — no HTML tags at all, return as-is.
     if not re.search(r"<[a-zA-Z][^>]*>", html):
         return html.strip() or None
+    # Mixed content (e.g. Thingiverse): plain-text newlines + occasional HTML tags.
+    # Convert bare \n to <br> first so html2text doesn't collapse them as whitespace.
+    processed = html.replace("\n", "<br>")
     h = html2text.HTML2Text()
     h.ignore_links = False
     h.body_width = 0
-    return h.handle(html).strip() or None
+    result = h.handle(processed).strip()
+    # html2text escapes dashes at line starts (e.g. \- M3) to prevent them from
+    # being treated as Markdown list items — but they ARE list items, so unescape.
+    result = result.replace("\\-", "-")
+    # Collapse any excessive blank lines that <br> sequences can produce
+    return re.sub(r"\n{3,}", "\n\n", result) or None
 
 
 def _detect_platform(url: str) -> tuple[str, str]:
