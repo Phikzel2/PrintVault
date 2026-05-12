@@ -344,7 +344,7 @@ export function FilesSection({
   modelId, files, printers,
   onDelete, onPrinterChange, onSourceChange, onUploadSuccess, onAddFiles,
 }: FilesSectionProps) {
-  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<number | "unlinked" | null>(null);
   const [externalDrag, setExternalDrag] = useState(false);
@@ -378,7 +378,7 @@ export function FilesSection({
   }
 
   const toggle = (id: number) =>
-    setExpanded((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+    setCollapsed((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
   const uploadFiles = async (fileList: File[], sourceFileId: number | null) => {
     if (!fileList.length) return;
@@ -498,7 +498,7 @@ export function FilesSection({
             gcodes={gcodesBySource[sf.id] ?? []}
             printers={printers}
             isDropTarget={dropTarget === sf.id}
-            isCollapsed={!expanded.has(sf.id)}
+            isCollapsed={collapsed.has(sf.id)}
             activeDrag={activeDrag}
             draggingId={draggingId}
             externalDrag={anyExternalDrag}
