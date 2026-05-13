@@ -160,6 +160,17 @@ Once a printer has a **Moonraker URL**, a send button appears next to any GCODE 
 - **Sidebar filters** — click any tag, file type, or visibility filter; the search bar stays in sync with the active filters
 - Combine all filters freely for precise results
 
+### Keyboard Shortcuts
+
+| Key | Action |
+|---|---|
+| `n` | Open the **Add New Model** dialog |
+| `i` | Open the **Import URL** dialog |
+| `/` or `Ctrl+K` | Focus the search bar |
+| `Esc` | Close the active modal or dialog |
+
+Shortcuts are ignored when focus is inside an input, textarea, or select.
+
 ### Settings
 
 Click the gear icon (top-right) to access your settings:
