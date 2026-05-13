@@ -15,6 +15,7 @@ A self-hosted 3D print file library — your personal alternative to Printables,
 - **Open in slicer** — one-click open of STL/3MF files in OrcaSlicer, Bambu Studio, PrusaSlicer, SuperSlicer, or Ultimaker Cura
 - **Light / dark mode** — toggle in the header, preference persisted in localStorage
 - **Mobile-friendly** — responsive layout with a collapsible search bar on small screens
+- **PWA** — installable as a home-screen app via Safari (iOS) or Chrome (Android/desktop); opens fullscreen with no browser chrome
 - **Source tracking** — store the original URL and license for each model
 - **Import from URL** — paste a Printables or Thingiverse model URL to preview and import files directly into your library
 - **Settings** — per-user date format preference; admins manage users from the UI
