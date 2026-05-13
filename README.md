@@ -138,7 +138,7 @@ The sidebar filter lets you quickly switch between **All**, **Public**, and **Pr
 
 ### Printer Profiles
 
-Go to **Printers** in the navigation to manage printer profiles.
+Go to **Settings → Manage Printers** to manage printer profiles.
 
 Each printer can have:
 
