@@ -328,90 +328,106 @@ export function Home() {
         </main>
       </div>
 
-      {/* Batch action bar */}
+      {/* Batch action bar — bottom sheet on mobile, floating pill on desktop */}
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl px-5 py-3">
+        <div className="fixed bottom-0 left-0 right-0 md:bottom-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-auto z-50 bg-white dark:bg-gray-900 border-t md:border border-gray-200 dark:border-gray-700 md:rounded-2xl shadow-2xl px-4 md:px-5 pt-3 pb-safe-4 md:py-3">
           {confirmBatchDelete ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between gap-3">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Permanently delete {selectedIds.size} model{selectedIds.size !== 1 ? "s" : ""}?
+                Delete {selectedIds.size} model{selectedIds.size !== 1 ? "s" : ""}?
               </span>
-              <button
-                onClick={handleBatchDelete}
-                disabled={batchBusy}
-                className="text-sm px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 font-medium"
-              >
-                Delete
-              </button>
-              <button
-                onClick={() => setConfirmBatchDelete(false)}
-                className="text-sm px-3 py-1.5 btn-secondary"
-              >
-                Cancel
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setConfirmBatchDelete(false)}
+                  className="text-sm px-3 py-1.5 btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBatchDelete}
+                  disabled={batchBusy}
+                  className="text-sm px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 font-medium"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           ) : (
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">
-                {selectedIds.size} selected
-              </span>
-              <button
-                onClick={() => {
-                  if (selectedIds.size === models.length) {
-                    setSelectedIds(new Set());
-                  } else {
-                    setSelectedIds(new Set(models.map(m => m.id)));
-                  }
-                }}
-                className="text-sm text-brand-400 hover:text-brand-300 transition-colors shrink-0"
-              >
-                {selectedIds.size === models.length ? "Deselect all" : "Select all"}
-              </button>
-              <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 shrink-0" />
-              <form onSubmit={handleBatchTag} className="flex items-center gap-1">
-                <input
-                  type="text"
-                  value={batchTag}
-                  onChange={e => setBatchTag(e.target.value)}
-                  placeholder="Add tag…"
-                  className="text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 bg-transparent focus:outline-none focus:ring-1 focus:ring-brand-500 w-28"
-                />
+            <>
+              {/* Row 1: count + select all + close */}
+              <div className="flex items-center justify-between mb-2 md:hidden">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {selectedIds.size} selected
+                </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => selectedIds.size === models.length ? setSelectedIds(new Set()) : setSelectedIds(new Set(models.map(m => m.id)))}
+                    className="text-sm text-brand-400 hover:text-brand-300 transition-colors"
+                  >
+                    {selectedIds.size === models.length ? "Deselect all" : "Select all"}
+                  </button>
+                  <button onClick={clearSelection} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">✕</button>
+                </div>
+              </div>
+              {/* Row 2 (mobile) / single row (desktop): actions */}
+              <div className="flex items-center gap-2 md:gap-3">
+                {/* Desktop-only: count + select all */}
+                <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">
+                  {selectedIds.size} selected
+                </span>
                 <button
-                  type="submit"
-                  disabled={batchBusy || !batchTag.trim()}
-                  className="btn-secondary text-xs py-1 px-2 disabled:opacity-50"
+                  onClick={() => selectedIds.size === models.length ? setSelectedIds(new Set()) : setSelectedIds(new Set(models.map(m => m.id)))}
+                  className="hidden md:block text-sm text-brand-400 hover:text-brand-300 transition-colors shrink-0"
                 >
-                  Tag
+                  {selectedIds.size === models.length ? "Deselect all" : "Select all"}
                 </button>
-              </form>
-              <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 shrink-0" />
-              <button
-                onClick={() => handleBatchVisibility(true)}
-                disabled={batchBusy}
-                className="btn-secondary text-xs py-1 px-2 disabled:opacity-50 shrink-0"
-              >
-                Make public
-              </button>
-              <button
-                onClick={() => handleBatchVisibility(false)}
-                disabled={batchBusy}
-                className="btn-secondary text-xs py-1 px-2 disabled:opacity-50 shrink-0"
-              >
-                Make private
-              </button>
-              <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 shrink-0" />
-              <button
-                onClick={() => setConfirmBatchDelete(true)}
-                disabled={batchBusy}
-                className="text-xs px-2 py-1 text-red-500 hover:text-red-400 transition-colors disabled:opacity-50 shrink-0"
-              >
-                Delete
-              </button>
-              <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 shrink-0" />
-              <button onClick={clearSelection} className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors shrink-0">
-                ✕
-              </button>
-            </div>
+                <div className="hidden md:block w-px h-5 bg-gray-200 dark:bg-gray-700 shrink-0" />
+                <form onSubmit={handleBatchTag} className="flex items-center gap-1 flex-1 md:flex-none">
+                  <input
+                    type="text"
+                    value={batchTag}
+                    onChange={e => setBatchTag(e.target.value)}
+                    placeholder="Add tag…"
+                    className="text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 md:py-1 bg-transparent focus:outline-none focus:ring-1 focus:ring-brand-500 flex-1 md:w-28"
+                  />
+                  <button
+                    type="submit"
+                    disabled={batchBusy || !batchTag.trim()}
+                    className="btn-secondary text-xs py-1.5 md:py-1 px-2 disabled:opacity-50 shrink-0"
+                  >
+                    Tag
+                  </button>
+                </form>
+                <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 shrink-0" />
+                <button
+                  onClick={() => handleBatchVisibility(true)}
+                  disabled={batchBusy}
+                  className="btn-secondary text-xs py-1.5 md:py-1 px-2 disabled:opacity-50 shrink-0"
+                >
+                  Public
+                </button>
+                <button
+                  onClick={() => handleBatchVisibility(false)}
+                  disabled={batchBusy}
+                  className="btn-secondary text-xs py-1.5 md:py-1 px-2 disabled:opacity-50 shrink-0"
+                >
+                  Private
+                </button>
+                <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 shrink-0" />
+                <button
+                  onClick={() => setConfirmBatchDelete(true)}
+                  disabled={batchBusy}
+                  className="text-xs px-2 py-1.5 md:py-1 text-red-500 hover:text-red-400 transition-colors disabled:opacity-50 shrink-0"
+                >
+                  Delete
+                </button>
+                {/* Desktop-only close */}
+                <div className="hidden md:block w-px h-5 bg-gray-200 dark:bg-gray-700 shrink-0" />
+                <button onClick={clearSelection} className="hidden md:block text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors shrink-0">
+                  ✕
+                </button>
+              </div>
+            </>
           )}
         </div>
       )}

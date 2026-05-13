@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import type { PrintModelSummary } from "../types";
-import { modelsApi } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { formatDate } from "../utils/format";
@@ -29,11 +28,58 @@ export function ModelCard({ model, selected = false, selectionActive = false, on
   const thumbUrl = model.thumbnail_path ? `${model.thumbnail_path}&theme=${theme}` : null;
   const showPublicBadge = model.is_public;
 
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchMoved = useRef(false);
+  const longPressActivated = useRef(false);
+
+  const handleTouchStart = () => {
+    if (!onSelect) return;
+    touchMoved.current = false;
+    longPressActivated.current = false;
+    longPressTimer.current = setTimeout(() => {
+      if (!touchMoved.current) {
+        longPressActivated.current = true;
+        onSelect(model.id);
+      }
+    }, 500);
+  };
+
+  const handleTouchMove = () => {
+    touchMoved.current = true;
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (longPressActivated.current) {
+      e.preventDefault();
+      longPressActivated.current = false;
+      return;
+    }
+    if (selectionActive && onSelect) {
+      e.preventDefault();
+      onSelect(model.id);
+    }
+  };
+
   return (
     <div className={`rounded-xl ${selected ? "outline outline-2 outline-brand-500" : ""}`}>
     <Link
       to={`/models/${model.id}`}
-      onClick={(e) => { if (selectionActive && onSelect) { e.preventDefault(); onSelect(model.id); } }}
+      onClick={handleClick}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onContextMenu={(e) => { if (onSelect) e.preventDefault(); }}
       className="card group flex flex-col overflow-hidden hover:border-brand-600 transition-colors"
     >
       <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-800 relative overflow-hidden">
