@@ -29,21 +29,38 @@ export function ModelCard({ model, selected = false, selectionActive = false, on
   const showPublicBadge = model.is_public;
 
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const touchMoved = useRef(false);
+  const touchOrigin = useRef<{ x: number; y: number } | null>(null);
+  const didLongPress = useRef(false);
 
-  const handleTouchStart = () => {
+  const handleTouchStart = (e: React.TouchEvent) => {
     if (!onSelect || selectionActive) return;
-    touchMoved.current = false;
+    didLongPress.current = false;
+    touchOrigin.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     longPressTimer.current = setTimeout(() => {
-      if (!touchMoved.current) {
-        onSelect(model.id);
-        // Suppress the synthetic click iOS fires after touchend
-        window.addEventListener("click", (e) => {
-          e.stopPropagation();
-          e.preventDefault();
-        }, { capture: true, once: true });
-      }
+      didLongPress.current = true;
+      onSelect(model.id);
+      // Suppress the synthetic click iOS fires after touchend.
+      // Clean up the listener after 600ms in case iOS skips it.
+      let cleanup: ReturnType<typeof setTimeout>;
+      const listener = (ev: MouseEvent) => {
+        ev.stopPropagation();
+        ev.preventDefault();
+        clearTimeout(cleanup);
+      };
+      window.addEventListener("click", listener, { capture: true, once: true });
+      cleanup = setTimeout(() => window.removeEventListener("click", listener, true), 600);
     }, 500);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchOrigin.current || !longPressTimer.current) return;
+    const dx = Math.abs(e.touches[0].clientX - touchOrigin.current.x);
+    const dy = Math.abs(e.touches[0].clientY - touchOrigin.current.y);
+    // Only cancel if the finger actually moved (scrolling), not micro-vibrations
+    if (dx > 10 || dy > 10) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
   };
 
   const cancelLongPress = () => {
@@ -58,9 +75,9 @@ export function ModelCard({ model, selected = false, selectionActive = false, on
     <div
       className={`group relative rounded-xl ${selected ? "outline outline-2 outline-brand-500" : ""}`}
       onTouchStart={handleTouchStart}
-      onTouchMove={() => { touchMoved.current = true; cancelLongPress(); }}
+      onTouchMove={handleTouchMove}
       onTouchEnd={cancelLongPress}
-      onContextMenu={(e) => { if (onSelect) e.preventDefault(); }}
+      onContextMenu={(e) => e.preventDefault()}
     >
       {/* Link has no touch/click handlers so iOS click synthesis is unaffected */}
       <Link
