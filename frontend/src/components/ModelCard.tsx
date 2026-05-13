@@ -29,11 +29,11 @@ export function ModelCard({ model, selected = false, selectionActive = false, on
   const showPublicBadge = model.is_public;
 
   return (
-    <div className={`group relative rounded-xl ${selected ? "outline outline-2 outline-brand-500" : ""}`}>
+    <div className={`group relative rounded-xl h-full ${selected ? "outline outline-2 outline-brand-500" : ""}`}>
       <Link
         to={`/models/${model.id}`}
         onClick={(e) => { if (selectionActive && onSelect) { e.preventDefault(); onSelect(model.id); } }}
-        className="card flex flex-col overflow-hidden hover:border-brand-600 transition-colors"
+        className="card h-full flex flex-col overflow-hidden hover:border-brand-600 transition-colors"
       >
         <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-800 relative overflow-hidden">
           {thumbUrl ? (
