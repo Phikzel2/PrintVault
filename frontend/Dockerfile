@@ -4,6 +4,12 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install
 
+# Generate PWA icons from the SVG source (needs @resvg/resvg-js)
+RUN npm install @resvg/resvg-js --no-save
+COPY scripts/ ./scripts/
+COPY public/ ./public/
+RUN node scripts/generate-icons.mjs
+
 COPY . .
 RUN npm run build
 
