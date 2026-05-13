@@ -39,6 +39,11 @@ export function Home() {
   const [externalDrag, setExternalDrag] = useState(false);
   const [dropFiles, setDropFiles] = useState<File[] | undefined>(undefined);
 
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [batchTag, setBatchTag] = useState("");
+  const [confirmBatchDelete, setConfirmBatchDelete] = useState(false);
+  const [batchBusy, setBatchBusy] = useState(false);
+
   const currentPageRef = useRef(1);
   const loadIdRef = useRef(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -96,6 +101,47 @@ export function Home() {
     if (value) next.set(key, value); else next.delete(key);
     next.delete("page");
     setSearchParams(next);
+  };
+
+  const toggleSelect = (id: number) =>
+    setSelectedIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+
+  const clearSelection = () => { setSelectedIds(new Set()); setBatchTag(""); setConfirmBatchDelete(false); };
+
+  const handleBatchVisibility = async (isPublic: boolean) => {
+    setBatchBusy(true);
+    try {
+      await Promise.all([...selectedIds].map(id => modelsApi.setVisibility(id, isPublic)));
+      showToast(`Made ${selectedIds.size} model${selectedIds.size !== 1 ? "s" : ""} ${isPublic ? "public" : "private"}`);
+      clearSelection();
+      loadPage(1, true);
+    } finally { setBatchBusy(false); }
+  };
+
+  const handleBatchTag = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const tag = batchTag.trim().toLowerCase();
+    if (!tag) return;
+    setBatchBusy(true);
+    try {
+      const selected = models.filter(m => selectedIds.has(m.id));
+      await Promise.all(selected.map(m =>
+        modelsApi.update(m.id, { tags: [...new Set([...m.tags.map(t => t.name), tag])] })
+      ));
+      showToast(`Tag "${tag}" added to ${selectedIds.size} model${selectedIds.size !== 1 ? "s" : ""}`);
+      clearSelection();
+      loadPage(1, true);
+    } finally { setBatchBusy(false); }
+  };
+
+  const handleBatchDelete = async () => {
+    setBatchBusy(true);
+    try {
+      await Promise.all([...selectedIds].map(id => modelsApi.delete(id)));
+      showToast(`Deleted ${selectedIds.size} model${selectedIds.size !== 1 ? "s" : ""}`);
+      clearSelection();
+      loadPage(1, true);
+    } finally { setBatchBusy(false); }
   };
 
   const handlePageDragEnter = (e: React.DragEvent) => {
@@ -264,7 +310,13 @@ export function Home() {
           ) : (
             <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 transition-opacity duration-150 ${loading ? "opacity-50" : "opacity-100"}`}>
               {models.map((m) => (
-                <ModelCard key={m.id} model={m} />
+                <ModelCard
+                  key={m.id}
+                  model={m}
+                  selected={selectedIds.has(m.id)}
+                  selectionActive={selectedIds.size > 0}
+                  onSelect={toggleSelect}
+                />
               ))}
             </div>
           )}
@@ -278,6 +330,91 @@ export function Home() {
           )}
         </main>
       </div>
+
+      {/* Batch action bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl px-5 py-3 flex-wrap justify-center">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">
+            {selectedIds.size} selected
+          </span>
+          <button
+            onClick={() => {
+              const allIds = new Set(models.map(m => m.id));
+              if (selectedIds.size === models.length) {
+                setSelectedIds(new Set());
+              } else {
+                setSelectedIds(allIds);
+              }
+            }}
+            className="text-sm text-brand-400 hover:text-brand-300 transition-colors shrink-0"
+          >
+            {selectedIds.size === models.length ? "Deselect all" : "Select all"}
+          </button>
+          <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 shrink-0" />
+          <form onSubmit={handleBatchTag} className="flex items-center gap-1">
+            <input
+              type="text"
+              value={batchTag}
+              onChange={e => setBatchTag(e.target.value)}
+              placeholder="Add tag…"
+              className="text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 bg-transparent focus:outline-none focus:ring-1 focus:ring-brand-500 w-28"
+            />
+            <button
+              type="submit"
+              disabled={batchBusy || !batchTag.trim()}
+              className="btn-secondary text-xs py-1 px-2 disabled:opacity-50"
+            >
+              Tag
+            </button>
+          </form>
+          <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 shrink-0" />
+          <button
+            onClick={() => handleBatchVisibility(true)}
+            disabled={batchBusy}
+            className="btn-secondary text-xs py-1 px-2 disabled:opacity-50"
+          >
+            Make public
+          </button>
+          <button
+            onClick={() => handleBatchVisibility(false)}
+            disabled={batchBusy}
+            className="btn-secondary text-xs py-1 px-2 disabled:opacity-50"
+          >
+            Make private
+          </button>
+          <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 shrink-0" />
+          {confirmBatchDelete ? (
+            <>
+              <span className="text-xs text-red-500 shrink-0">Delete {selectedIds.size}?</span>
+              <button
+                onClick={handleBatchDelete}
+                disabled={batchBusy}
+                className="text-xs px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              >
+                Confirm
+              </button>
+              <button
+                onClick={() => setConfirmBatchDelete(false)}
+                className="text-xs px-2 py-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setConfirmBatchDelete(true)}
+              disabled={batchBusy}
+              className="text-xs px-2 py-1 text-red-500 hover:text-red-400 transition-colors disabled:opacity-50"
+            >
+              Delete
+            </button>
+          )}
+          <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 shrink-0" />
+          <button onClick={clearSelection} className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors shrink-0">
+            ✕
+          </button>
+        </div>
+      )}
 
       {showUpload && (
         <UploadModal
