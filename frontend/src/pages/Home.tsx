@@ -278,7 +278,7 @@ export function Home() {
               </select>
               <button
                 onClick={() => selectionMode ? clearSelection() : setSelectionMode(true)}
-                className={`text-sm px-3 py-1 rounded-lg border transition-colors ${
+                className={`md:hidden text-sm px-3 py-1 rounded-lg border transition-colors ${
                   selectionMode
                     ? "border-brand-500 text-brand-400 bg-brand-600/10"
                     : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500"

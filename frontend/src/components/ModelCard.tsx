@@ -90,15 +90,15 @@ export function ModelCard({ model, selected = false, selectionActive = false, on
         </div>
       </Link>
 
-      {/* Checkbox — visible on hover (desktop) or always when selection is active */}
-      {onSelect && (
+      {/* Checkbox — only rendered when selection mode is active.
+          Keeping it in the DOM with opacity-0 + group-hover caused iOS to
+          treat the first tap as a hover event, preventing navigation. */}
+      {onSelect && selectionActive && (
         <div
-          className={`absolute top-2 left-2 z-10 w-5 h-5 rounded border-2 flex items-center justify-center transition-opacity cursor-pointer ${
+          className={`absolute top-2 left-2 z-10 w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer ${
             selected
-              ? "bg-brand-500 border-brand-500 opacity-100"
-              : selectionActive
-              ? "bg-white/80 dark:bg-gray-900/80 border-gray-400 dark:border-gray-500 opacity-100"
-              : "bg-white/80 dark:bg-gray-900/80 border-gray-400 dark:border-gray-500 opacity-0 group-hover:opacity-100"
+              ? "bg-brand-500 border-brand-500"
+              : "bg-white/80 dark:bg-gray-900/80 border-gray-400 dark:border-gray-500"
           }`}
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSelect(model.id); }}
         >
