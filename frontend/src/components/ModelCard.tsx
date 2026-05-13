@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { PrintModelSummary } from "../types";
 import { useAuth } from "../context/AuthContext";
@@ -28,74 +28,18 @@ export function ModelCard({ model, selected = false, selectionActive = false, on
   const thumbUrl = model.thumbnail_path ? `${model.thumbnail_path}&theme=${theme}` : null;
   const showPublicBadge = model.is_public;
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const touchOrigin = useRef<{ x: number; y: number } | null>(null);
-  const didLongPress = useRef(false);
-
-  // Native non-passive contextmenu listener — React's synthetic onContextMenu may be
-  // registered as passive on some browsers, silently ignoring preventDefault on iOS.
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const handler = (e: Event) => e.preventDefault();
-    el.addEventListener("contextmenu", handler, { passive: false });
-    return () => el.removeEventListener("contextmenu", handler);
-  }, []);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (!onSelect || selectionActive) return;
-    didLongPress.current = false;
-    touchOrigin.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    longPressTimer.current = setTimeout(() => {
-      didLongPress.current = true;
-      onSelect(model.id);
-      // Suppress the synthetic click iOS fires after touchend.
-      // Clean up after 600ms in case iOS skips it (e.g. after touchcancel).
-      let cleanup: ReturnType<typeof setTimeout>;
-      const listener = (ev: MouseEvent) => { ev.stopPropagation(); ev.preventDefault(); clearTimeout(cleanup); };
-      window.addEventListener("click", listener, { capture: true, once: true });
-      cleanup = setTimeout(() => window.removeEventListener("click", listener, true), 600);
-    }, 500);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!touchOrigin.current || !longPressTimer.current) return;
-    const dx = Math.abs(e.touches[0].clientX - touchOrigin.current.x);
-    const dy = Math.abs(e.touches[0].clientY - touchOrigin.current.y);
-    if (dx > 10 || dy > 10) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  };
-
-  const cancelLongPress = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  };
-
   return (
-    <div
-      ref={containerRef}
-      className={`group relative rounded-xl ${selected ? "outline outline-2 outline-brand-500" : ""}`}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={cancelLongPress}
-    >
-      {/* No touch/click handlers on the Link — iOS click synthesis must be unobstructed */}
+    <div className={`group relative rounded-xl ${selected ? "outline outline-2 outline-brand-500" : ""}`}>
       <Link
         to={`/models/${model.id}`}
-        className="card flex flex-col overflow-hidden group-hover:border-brand-600 transition-colors"
+        onClick={(e) => { if (selectionActive && onSelect) { e.preventDefault(); onSelect(model.id); } }}
+        className="card flex flex-col overflow-hidden hover:border-brand-600 transition-colors"
       >
         <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-800 relative overflow-hidden">
           {thumbUrl ? (
             <img
               src={thumbUrl}
               alt={model.name}
-              draggable={false}
-              style={{ WebkitTouchCallout: "none" } as React.CSSProperties}
               onLoad={() => setImgLoaded(true)}
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               className={`w-full h-full object-cover group-hover:scale-105 transition-[transform,opacity] duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
@@ -146,25 +90,17 @@ export function ModelCard({ model, selected = false, selectionActive = false, on
         </div>
       </Link>
 
-      {/* Full-card overlay: intercepts taps when selection mode is active */}
-      {selectionActive && onSelect && (
-        <div
-          className="absolute inset-0 z-10 rounded-xl cursor-pointer"
-          onClick={() => onSelect(model.id)}
-        />
-      )}
-
-      {/* Checkbox: visible on hover (desktop) or always when selection is active */}
+      {/* Checkbox — visible on hover (desktop) or always when selection is active */}
       {onSelect && (
         <div
-          className={`absolute top-2 left-2 z-20 w-5 h-5 rounded border-2 flex items-center justify-center transition-opacity cursor-pointer ${
+          className={`absolute top-2 left-2 z-10 w-5 h-5 rounded border-2 flex items-center justify-center transition-opacity cursor-pointer ${
             selected
               ? "bg-brand-500 border-brand-500 opacity-100"
               : selectionActive
               ? "bg-white/80 dark:bg-gray-900/80 border-gray-400 dark:border-gray-500 opacity-100"
               : "bg-white/80 dark:bg-gray-900/80 border-gray-400 dark:border-gray-500 opacity-0 group-hover:opacity-100"
           }`}
-          onClick={(e) => { e.stopPropagation(); onSelect(model.id); }}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSelect(model.id); }}
         >
           {selected && (
             <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">

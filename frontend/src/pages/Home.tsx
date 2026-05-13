@@ -39,6 +39,7 @@ export function Home() {
   const [externalDrag, setExternalDrag] = useState(false);
   const [dropFiles, setDropFiles] = useState<File[] | undefined>(undefined);
 
+  const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [batchTag, setBatchTag] = useState("");
   const [confirmBatchDelete, setConfirmBatchDelete] = useState(false);
@@ -106,7 +107,7 @@ export function Home() {
   const toggleSelect = (id: number) =>
     setSelectedIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
-  const clearSelection = () => { setSelectedIds(new Set()); setBatchTag(""); setConfirmBatchDelete(false); };
+  const clearSelection = () => { setSelectedIds(new Set()); setBatchTag(""); setConfirmBatchDelete(false); setSelectionMode(false); };
 
   const handleBatchVisibility = async (isPublic: boolean) => {
     setBatchBusy(true);
@@ -275,6 +276,16 @@ export function Home() {
                 <option value="name_asc">Name A→Z</option>
                 <option value="name_desc">Name Z→A</option>
               </select>
+              <button
+                onClick={() => selectionMode ? clearSelection() : setSelectionMode(true)}
+                className={`text-sm px-3 py-1 rounded-lg border transition-colors ${
+                  selectionMode
+                    ? "border-brand-500 text-brand-400 bg-brand-600/10"
+                    : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500"
+                }`}
+              >
+                {selectionMode ? "Done" : "Select"}
+              </button>
             </div>
           </div>
 
@@ -311,7 +322,7 @@ export function Home() {
                   key={m.id}
                   model={m}
                   selected={selectedIds.has(m.id)}
-                  selectionActive={selectedIds.size > 0}
+                  selectionActive={selectionMode}
                   onSelect={toggleSelect}
                 />
               ))}
