@@ -375,7 +375,7 @@ export function Home() {
                     >
                       {selectedIds.size === models.length ? "Deselect all" : "Select all"}
                     </button>
-                    <button onClick={clearSelection} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">✕</button>
+                    <button onClick={clearSelection} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors w-8 h-8 flex items-center justify-center rounded-lg">✕</button>
                   </div>
                 </div>
                 {/* Row 2: tag */}
