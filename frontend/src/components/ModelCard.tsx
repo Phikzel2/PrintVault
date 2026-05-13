@@ -73,7 +73,7 @@ export function ModelCard({ model, selected = false, selectionActive = false, on
   return (
     // group lives here so hover works across the whole card including the overlay/checkbox siblings
     <div
-      className={`group relative rounded-xl select-none ${selected ? "outline outline-2 outline-brand-500" : ""}`}
+      className={`group relative rounded-xl ${selected ? "outline outline-2 outline-brand-500" : ""}`}
       style={{ WebkitTouchCallout: "none" } as React.CSSProperties}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
