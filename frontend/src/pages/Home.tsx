@@ -275,9 +275,6 @@ export function Home() {
                 <option value="name_asc">Name A→Z</option>
                 <option value="name_desc">Name Z→A</option>
               </select>
-              <button onClick={() => setShowUpload(true)} className="btn-primary text-sm md:hidden">
-                + Add
-              </button>
             </div>
           </div>
 
