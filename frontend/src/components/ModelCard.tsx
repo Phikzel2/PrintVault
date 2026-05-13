@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import type { PrintModelSummary } from "../types";
 import { useAuth } from "../context/AuthContext";
@@ -28,9 +28,20 @@ export function ModelCard({ model, selected = false, selectionActive = false, on
   const thumbUrl = model.thumbnail_path ? `${model.thumbnail_path}&theme=${theme}` : null;
   const showPublicBadge = model.is_public;
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchOrigin = useRef<{ x: number; y: number } | null>(null);
   const didLongPress = useRef(false);
+
+  // Native non-passive contextmenu listener — React's synthetic onContextMenu may be
+  // registered as passive on some browsers, silently ignoring preventDefault on iOS.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handler = (e: Event) => e.preventDefault();
+    el.addEventListener("contextmenu", handler, { passive: false });
+    return () => el.removeEventListener("contextmenu", handler);
+  }, []);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!onSelect || selectionActive) return;
@@ -40,13 +51,9 @@ export function ModelCard({ model, selected = false, selectionActive = false, on
       didLongPress.current = true;
       onSelect(model.id);
       // Suppress the synthetic click iOS fires after touchend.
-      // Clean up the listener after 600ms in case iOS skips it.
+      // Clean up after 600ms in case iOS skips it (e.g. after touchcancel).
       let cleanup: ReturnType<typeof setTimeout>;
-      const listener = (ev: MouseEvent) => {
-        ev.stopPropagation();
-        ev.preventDefault();
-        clearTimeout(cleanup);
-      };
+      const listener = (ev: MouseEvent) => { ev.stopPropagation(); ev.preventDefault(); clearTimeout(cleanup); };
       window.addEventListener("click", listener, { capture: true, once: true });
       cleanup = setTimeout(() => window.removeEventListener("click", listener, true), 600);
     }, 500);
@@ -56,7 +63,6 @@ export function ModelCard({ model, selected = false, selectionActive = false, on
     if (!touchOrigin.current || !longPressTimer.current) return;
     const dx = Math.abs(e.touches[0].clientX - touchOrigin.current.x);
     const dy = Math.abs(e.touches[0].clientY - touchOrigin.current.y);
-    // Only cancel if the finger actually moved (scrolling), not micro-vibrations
     if (dx > 10 || dy > 10) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
@@ -71,19 +77,17 @@ export function ModelCard({ model, selected = false, selectionActive = false, on
   };
 
   return (
-    // group lives here so hover works across the whole card including the overlay/checkbox siblings
     <div
+      ref={containerRef}
       className={`group relative rounded-xl ${selected ? "outline outline-2 outline-brand-500" : ""}`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={cancelLongPress}
-      onContextMenu={(e) => e.preventDefault()}
     >
-      {/* Link has no touch/click handlers so iOS click synthesis is unaffected */}
+      {/* No touch/click handlers on the Link — iOS click synthesis must be unobstructed */}
       <Link
         to={`/models/${model.id}`}
         className="card flex flex-col overflow-hidden group-hover:border-brand-600 transition-colors"
-        style={{ WebkitTouchCallout: "none" } as React.CSSProperties}
       >
         <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-800 relative overflow-hidden">
           {thumbUrl ? (
