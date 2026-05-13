@@ -2,6 +2,8 @@
 
 A self-hosted 3D print file library — your personal alternative to Printables, MakerWorld, and Thingiverse. Organize STL, 3MF, GCODE, OBJ, STEP, and AMF files with a searchable web UI, in-browser 3D viewer, per-printer GCODE management, direct push to Klipper/Moonraker printers, and one-click import from Printables and Thingiverse.
 
+> Vibecoded with [Claude Code](https://claude.ai/code).
+
 ## Features
 
 - **Multi-user** — JWT-based login, admin and regular users, per-user private libraries
