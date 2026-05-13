@@ -74,7 +74,6 @@ export function ModelCard({ model, selected = false, selectionActive = false, on
     // group lives here so hover works across the whole card including the overlay/checkbox siblings
     <div
       className={`group relative rounded-xl ${selected ? "outline outline-2 outline-brand-500" : ""}`}
-      style={{ WebkitTouchCallout: "none" } as React.CSSProperties}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={cancelLongPress}
@@ -84,6 +83,7 @@ export function ModelCard({ model, selected = false, selectionActive = false, on
       <Link
         to={`/models/${model.id}`}
         className="card flex flex-col overflow-hidden group-hover:border-brand-600 transition-colors"
+        style={{ WebkitTouchCallout: "none" } as React.CSSProperties}
       >
         <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-800 relative overflow-hidden">
           {thumbUrl ? (
@@ -91,6 +91,7 @@ export function ModelCard({ model, selected = false, selectionActive = false, on
               src={thumbUrl}
               alt={model.name}
               draggable={false}
+              style={{ WebkitTouchCallout: "none" } as React.CSSProperties}
               onLoad={() => setImgLoaded(true)}
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               className={`w-full h-full object-cover group-hover:scale-105 transition-[transform,opacity] duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
