@@ -5,7 +5,7 @@ import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { ThreeMFLoader } from "three/examples/jsm/loaders/3MFLoader.js";
 import * as THREE from "three";
 import type { ModelFile } from "../types";
-import { filesApi } from "../api/client";
+import { filesApi, modelsApi } from "../api/client";
 import { useTheme } from "../context/ThemeContext";
 
 const SLICERS = [
@@ -173,7 +173,7 @@ function ViewerFallback({ modelId, theme }: { modelId: number; theme: string }) 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-gray-50 dark:bg-gray-900 rounded">
       <img
-        src={`/api/models/${modelId}/thumbnail?theme=${theme}`}
+        src={`${modelsApi.thumbnailUrl(modelId)}?theme=${theme}`}
         alt="Model preview"
         className="max-w-xs max-h-48 object-contain rounded-lg opacity-80"
         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}

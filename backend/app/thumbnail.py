@@ -1,5 +1,6 @@
 import logging
 import os
+import zipfile
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,6 @@ STYLES = {
 
 def _extract_3mf_embedded_thumbnail(file_path: str, output_path: str, style: str = "dark") -> bool:
     """Extract pre-rendered plate thumbnail embedded by Bambu Studio / OrcaSlicer."""
-    import zipfile
     from PIL import Image
 
     try:
@@ -48,7 +48,6 @@ def _extract_3mf_embedded_thumbnail(file_path: str, output_path: str, style: str
             bg_img.paste(src, mask=src.split()[3])
             result = bg_img.convert("RGB").resize((400, 300), Image.LANCZOS)
 
-            import os
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             result.save(output_path, "JPEG", quality=85)
             return True
