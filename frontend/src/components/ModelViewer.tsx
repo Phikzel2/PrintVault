@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Component, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useLoader } from "@react-three/fiber";
 import { OrbitControls, Center, Bounds, useBounds, useProgress, Html } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
@@ -158,6 +158,35 @@ function FitOnLoad() {
   return null;
 }
 
+class ViewerErrorBoundary extends Component<
+  { children: React.ReactNode; fallback: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    return this.state.hasError ? this.props.fallback : this.props.children;
+  }
+}
+
+function ViewerFallback({ modelId, theme }: { modelId: number; theme: string }) {
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-gray-50 dark:bg-gray-900 rounded">
+      <img
+        src={`/api/models/${modelId}/thumbnail?theme=${theme}`}
+        alt="Model preview"
+        className="max-w-xs max-h-48 object-contain rounded-lg opacity-80"
+        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+      />
+      <p className="text-sm text-gray-500 dark:text-gray-400 text-center px-6">
+        3D preview not available for this file.
+        <br />
+        Open in a slicer to view.
+      </p>
+    </div>
+  );
+}
+
 function STLModel({ url }: { url: string }) {
   const geometry = useLoader(STLLoader, url);
   geometry.computeVertexNormals();
@@ -244,29 +273,34 @@ export function ModelViewer({ files }: ModelViewerProps) {
 
       <div className="flex-1 relative">
         {fileUrl && activeFile && (
-          <Canvas
-            shadows
-            camera={{ position: [0, 0, 5], fov: 50 }}
-            gl={{ antialias: true }}
-            className="w-full h-full"
+          <ViewerErrorBoundary
+            key={fileUrl}
+            fallback={<ViewerFallback modelId={activeFile.model_id} theme={theme} />}
           >
-            <color attach="background" args={[theme === "light" ? "#f3f4f6" : "#111827"]} />
-            <ambientLight intensity={0.4} />
-            <directionalLight position={[5, 8, 5]} intensity={1.5} castShadow />
-            <directionalLight position={[-5, 2, -5]} intensity={0.3} />
+            <Canvas
+              shadows
+              camera={{ position: [0, 0, 5], fov: 50 }}
+              gl={{ antialias: true }}
+              className="w-full h-full"
+            >
+              <color attach="background" args={[theme === "light" ? "#f3f4f6" : "#111827"]} />
+              <ambientLight intensity={0.4} />
+              <directionalLight position={[5, 8, 5]} intensity={1.5} castShadow />
+              <directionalLight position={[-5, 2, -5]} intensity={0.3} />
 
-            <Bounds clip margin={1.2}>
-              <Suspense fallback={<Loader />}>
-                {activeFile.file_type === "STL" ? (
-                  <STLModel key={fileUrl} url={fileUrl} />
-                ) : (
-                  <ThreeMFModel key={fileUrl} url={fileUrl} />
-                )}
-              </Suspense>
-            </Bounds>
+              <Bounds clip margin={1.2}>
+                <Suspense fallback={<Loader />}>
+                  {activeFile.file_type === "STL" ? (
+                    <STLModel key={fileUrl} url={fileUrl} />
+                  ) : (
+                    <ThreeMFModel key={fileUrl} url={fileUrl} />
+                  )}
+                </Suspense>
+              </Bounds>
 
-            <OrbitControls makeDefault enableDamping dampingFactor={0.05} />
-          </Canvas>
+              <OrbitControls makeDefault enableDamping dampingFactor={0.05} />
+            </Canvas>
+          </ViewerErrorBoundary>
         )}
 
         {activeFile && <SlicerButton fileId={activeFile.id} />}
