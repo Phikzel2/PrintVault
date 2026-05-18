@@ -22,10 +22,49 @@ STYLES = {
 }
 
 
+def _extract_3mf_embedded_thumbnail(file_path: str, output_path: str, style: str = "dark") -> bool:
+    """Extract pre-rendered plate thumbnail embedded by Bambu Studio / OrcaSlicer."""
+    import zipfile
+    from PIL import Image
+
+    try:
+        with zipfile.ZipFile(file_path) as z:
+            names = z.namelist()
+            # Prefer plate_1.png; fall back to any plate_N.png
+            candidates = sorted(
+                [n for n in names if n.startswith("Metadata/plate_") and n.endswith(".png") and "_small" not in n]
+            )
+            if not candidates:
+                return False
+
+            style_cfg = STYLES.get(style, STYLES["dark"])
+            bg = style_cfg["bg"]
+
+            with z.open(candidates[0]) as f:
+                src = Image.open(f).convert("RGBA")
+
+            # Composite onto the theme background to eliminate transparency
+            bg_img = Image.new("RGBA", src.size, (*bg, 255))
+            bg_img.paste(src, mask=src.split()[3])
+            result = bg_img.convert("RGB").resize((400, 300), Image.LANCZOS)
+
+            import os
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            result.save(output_path, "JPEG", quality=85)
+            return True
+    except Exception as e:
+        logger.warning("Embedded 3MF thumbnail extraction failed for %s: %s", file_path, e)
+        return False
+
+
 def generate_thumbnail(file_path: str, output_path: str, style: str = "dark") -> bool:
     ext = Path(file_path).suffix.lower()
     if ext not in SUPPORTED_FOR_THUMBNAIL:
         return False
+
+    # For 3MF files, try to use embedded Bambu/OrcaSlicer plate thumbnails first
+    if ext == ".3mf" and _extract_3mf_embedded_thumbnail(file_path, output_path, style):
+        return True
 
     style_cfg = STYLES.get(style, STYLES["dark"])
 
