@@ -1,6 +1,6 @@
 # PrintVault
 
-A self-hosted 3D print file library — your personal alternative to Printables, MakerWorld, and Thingiverse. Organize STL, 3MF, GCODE, OBJ, STEP, and AMF files with a searchable web UI, in-browser 3D viewer, per-printer GCODE management, direct push to Klipper/Moonraker printers, and one-click import from Printables and Thingiverse.
+A self-hosted 3D print file library — your personal alternative to Printables, MakerWorld, and Thingiverse. Organize STL, 3MF, GCODE, OBJ, STEP, and AMF files with a searchable web UI, in-browser 3D viewer, per-printer GCODE management, direct push to Klipper/Moonraker printers, and one-click import from Printables, Thingiverse, and MakerWorld.
 
 > Vibecoded with [Claude Code](https://claude.ai/code).
 
@@ -8,7 +8,7 @@ A self-hosted 3D print file library — your personal alternative to Printables,
 
 - **Multi-user** — JWT-based login, admin and regular users, per-user private libraries
 - **Public / Private models** — models are private by default; toggle visibility per model
-- **3D viewer** — rotate, zoom, and inspect STL and 3MF files in the browser
+- **3D viewer** — rotate, zoom, and inspect STL, 3MF, and OBJ files in the browser
 - **Auto thumbnails** — generated server-side on upload (CPU-only, no GPU required)
 - **File support** — STL, 3MF, GCODE, OBJ, STEP, AMF
 - **Moonraker integration** — push GCODE files directly to a Klipper printer via Moonraker
@@ -19,7 +19,8 @@ A self-hosted 3D print file library — your personal alternative to Printables,
 - **Mobile-friendly** — responsive layout with a collapsible search bar on small screens
 - **PWA** — installable as a home-screen app via Safari (iOS) or Chrome (Android/desktop); opens fullscreen with no browser chrome
 - **Source tracking** — store the original URL and license for each model
-- **Import from URL** — paste a Printables or Thingiverse model URL to preview and import files directly into your library
+- **Import from URL** — paste a Printables, Thingiverse, or MakerWorld model URL to preview and import files directly into your library
+- **GCODE metadata** — print time and filament weight from slicer headers displayed inline (PrusaSlicer, OrcaSlicer/Bambu Studio, Cura, Simplify3D)
 - **Settings** — per-user date format preference; admins manage users from the UI
 
 ## Stack
@@ -78,6 +79,7 @@ ALLOWED_ORIGINS=["https://your-domain.com"]
 
 # Import integrations (optional)
 # THINGIVERSE_TOKEN=your_app_token_here  # from https://www.thingiverse.com/developers
+# MAKERWORLD_TOKEN=your_bambu_token_here  # JWT from your Bambu Lab account session
 # Printables import works without a token
 
 # Optional tuning
@@ -101,18 +103,21 @@ openssl rand -hex 32
 
 Open the UI and log in with your admin credentials. Sessions last 7 days by default (configurable via `JWT_EXPIRE_HOURS`).
 
-### Importing from Printables or Thingiverse
+### Importing from Printables, Thingiverse, or MakerWorld
 
 Click **Import URL** in the header and paste any public model URL:
 
 - `https://www.printables.com/model/12345-model-name`
 - `https://www.thingiverse.com/thing:12345`
+- `https://makerworld.com/en/models/12345`
 
 PrintVault fetches the model metadata and shows a preview with name, description, license, tags, and a selectable file list. Choose which files to download and click **Import** — the model is created and files are downloaded server-side. Thumbnails are generated automatically.
 
 **Printables** works out of the box — no token needed.
 
 **Thingiverse** requires a free API token — register an app at [thingiverse.com/developers](https://www.thingiverse.com/developers) and add `THINGIVERSE_TOKEN=your_token` to `.env`.
+
+**MakerWorld** requires a Bambu Lab account JWT — log in to makerworld.com, copy the Bearer token from any authenticated API request, and add `MAKERWORLD_TOKEN=your_token` to `.env`.
 
 ### Adding a Model
 
@@ -207,7 +212,8 @@ PrintVault/
 │           ├── auth.py       # Login, /me
 │           ├── users.py      # User CRUD, settings, password
 │           ├── models.py     # Model CRUD, pagination, search, visibility
-│           ├── files.py      # Upload, download, delete, Moonraker proxy
+│           ├── files.py      # Upload, download, delete, Moonraker proxy, GCODE metadata
+│           ├── imports.py    # URL import from Printables, Thingiverse, MakerWorld
 │           ├── printers.py   # Printer profile CRUD
 │           └── tags.py       # Tag listing
 ├── frontend/                 # React SPA (Vite + Tailwind)
@@ -275,6 +281,7 @@ DELETE /api/files/{id}              Delete file
 PATCH  /api/files/{id}/printer      Assign/unassign printer
 PATCH  /api/files/{id}/source       Assign source file (slicer input)
 POST   /api/files/{id}/send         Push GCODE to Moonraker
+GET    /api/files/{id}/metadata     GCODE slicer metadata (print time, filament weight)
 
 # Printers
 GET    /api/printers                List printers
@@ -301,7 +308,7 @@ GET    /api/health                  Liveness + upload dir status
 |---|---|---|---|
 | `.stl` | STL | ✅ | ✅ |
 | `.3mf` | 3MF | ✅ | ✅ |
-| `.obj` | OBJ | — | ✅ |
+| `.obj` | OBJ | ✅ | ✅ |
 | `.gcode` `.gc` `.gco` | GCODE | — | — |
 | `.step` `.stp` | STEP | — | — |
 | `.amf` | AMF | — | — |
