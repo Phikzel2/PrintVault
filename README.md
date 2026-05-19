@@ -182,16 +182,21 @@ Shortcuts are ignored when focus is inside an input, textarea, or select.
 
 ### Settings
 
-Click the gear icon (top-right) to access your settings:
+Click the gear icon (top-right) to access your settings. The page is organized into cards:
 
-- **Date format** — choose DD/MM/YYYY, MM/DD/YYYY, or YYYY-MM-DD
-- **Change password** — requires your current password
+**Printers** — opens the printer profile manager (see [Printer Profiles](#printer-profiles)).
 
-### User Management (Admin only)
+**Storage** — opens the storage stats page showing total disk usage, breakdown by file type, largest models, and per-user usage (admins only).
 
-In Settings → **User Management** (visible to admins only):
+**Preferences**
+- **Date format** — choose DD/MM/YYYY, MM/DD/YYYY, or YYYY-MM-DD; applied to all dates in the UI
 
-- **Create users** — provide a username and password
+**Change Password**
+- Enter your current password and a new password (minimum 6 characters) to update your credentials.
+
+**User Management** *(admin only)*
+- **List users** — click "Load users" to see all accounts with their admin status
+- **Create users** — provide a username and password to add a new account
 - **Delete users** — removes the user; their private models and files are deleted from disk; their public models are kept (owner set to null)
 
 ---
