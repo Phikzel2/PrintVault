@@ -196,7 +196,7 @@ function GcodeRow({
         </div>
       </div>
       {meta && (meta.print_time || meta.filament_g != null) && (
-        <div className="pl-[22px] flex gap-3 text-xs text-gray-400 dark:text-gray-600 -mt-0.5 pb-0.5 select-none">
+        <div className="pl-[22px] flex gap-3 text-xs text-gray-500 dark:text-gray-400 -mt-0.5 pb-0.5 select-none">
           {meta.print_time && <span>{meta.print_time}</span>}
           {meta.filament_g != null && <span>{meta.filament_g}g</span>}
         </div>

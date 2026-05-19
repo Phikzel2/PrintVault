@@ -23,32 +23,45 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["files"])
 
 
+def _parse_gcode_comment(line: str, result: dict) -> None:
+    line = line.strip()
+    if not line.startswith(";"):
+        return
+    # PrusaSlicer / OrcaSlicer / Bambu Studio
+    if m := re.search(r"; estimated printing time.*?=\s*(.+)", line, re.IGNORECASE):
+        result.setdefault("print_time", m.group(1).strip())
+    if m := re.search(r"; (?:total )?filament(?: used| weight)? \[g\]\s*=\s*([\d.]+)", line, re.IGNORECASE):
+        result.setdefault("filament_g", round(float(m.group(1)), 1))
+    # Cura: ;TIME:5025  or  ;TIME_ELAPSED:5025.00
+    if m := re.match(r";TIME:(\d+)", line):
+        secs = int(m.group(1))
+        h, rem = divmod(secs, 3600)
+        mn, s = divmod(rem, 60)
+        result.setdefault("print_time", f"{h}h {mn}m" if h else f"{mn}m {s}s")
+    # Cura: ;Filament used: 1.23m  (convert mm → g is unreliable; skip weight for Cura)
+    # Simplify3D
+    if m := re.search(r"; Build time:\s*(.+)", line, re.IGNORECASE):
+        result.setdefault("print_time", m.group(1).strip())
+    if m := re.search(r"; Plastic weight:\s*([\d.]+)\s*grams?", line, re.IGNORECASE):
+        result.setdefault("filament_g", round(float(m.group(1)), 1))
+
+
 def _parse_gcode_metadata(file_path: str) -> dict:
     result: dict = {}
     try:
         with open(file_path, encoding="utf-8", errors="ignore") as f:
-            for i, line in enumerate(f):
-                if i >= 200:
-                    break
-                line = line.strip()
-                if not line.startswith(";"):
-                    continue
-                # PrusaSlicer / OrcaSlicer / Bambu Studio
-                if m := re.search(r"; estimated printing time.*?=\s*(.+)", line, re.IGNORECASE):
-                    result.setdefault("print_time", m.group(1).strip())
-                if m := re.search(r"; (?:total )?filament (?:weight |used )?\[g\]\s*=\s*([\d.]+)", line, re.IGNORECASE):
-                    result.setdefault("filament_g", round(float(m.group(1)), 1))
-                # Cura: ;TIME:5025
-                if m := re.match(r";TIME:(\d+)$", line):
-                    secs = int(m.group(1))
-                    h, rem = divmod(secs, 3600)
-                    mn, s = divmod(rem, 60)
-                    result.setdefault("print_time", f"{h}h {mn}m" if h else f"{mn}m {s}s")
-                # Simplify3D
-                if m := re.search(r"; Build time:\s*(.+)", line, re.IGNORECASE):
-                    result.setdefault("print_time", m.group(1).strip())
-                if m := re.search(r"; Plastic weight:\s*([\d.]+)\s*grams?", line, re.IGNORECASE):
-                    result.setdefault("filament_g", round(float(m.group(1)), 1))
+            lines = f.readlines()
+        # Scan first 200 lines (PrusaSlicer / Cura write metadata at the top)
+        for line in lines[:200]:
+            _parse_gcode_comment(line, result)
+            if len(result) == 2:
+                return result
+        # Scan last 800 lines — OrcaSlicer / Bambu Studio embed their summary
+        # just before CONFIG_BLOCK_START which can be ~600 lines from EOF
+        for line in lines[-800:]:
+            _parse_gcode_comment(line, result)
+            if len(result) == 2:
+                return result
     except Exception:
         pass
     return result
