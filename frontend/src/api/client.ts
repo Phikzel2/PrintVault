@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { GcodeMetadata, ImportFile, ImportPreview, PaginatedModels, PrintModel, PrintModelSummary, Printer, Tag, Token, User, UserSettings } from "../types";
+import type { GcodeMetadata, ImportFile, ImportPreview, PaginatedModels, PrintModel, PrintModelSummary, Printer, StorageStats, Tag, Token, User, UserSettings } from "../types";
 
 const api = axios.create({
   baseURL: "/api",
@@ -115,6 +115,10 @@ export const importApi = {
     files: ImportFile[];
     thumbnail_url?: string | null;
   }) => api.post<PrintModel>("/import/confirm", data),
+};
+
+export const statsApi = {
+  storage: () => api.get<StorageStats>("/stats/storage"),
 };
 
 export const filesApi = {

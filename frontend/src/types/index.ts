@@ -96,6 +96,35 @@ export interface GcodeMetadata {
   filament_g?: number;
 }
 
+export interface FileTypeStats {
+  file_type: string;
+  count: number;
+  bytes: number;
+}
+
+export interface ModelStorageStats {
+  model_id: number;
+  name: string;
+  file_count: number;
+  bytes: number;
+}
+
+export interface UserStorageStats {
+  user_id: number;
+  username: string;
+  file_count: number;
+  bytes: number;
+}
+
+export interface StorageStats {
+  total_bytes: number;
+  total_files: number;
+  total_models: number;
+  by_file_type: FileTypeStats[];
+  top_models: ModelStorageStats[];
+  by_user?: UserStorageStats[];
+}
+
 export interface ImportFile {
   name: string;
   download_url: string;

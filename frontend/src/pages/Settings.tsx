@@ -38,6 +38,16 @@ export function Settings() {
             Manage Printers
           </Link>
         </div>
+        <div className="card p-5">
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-1">Storage</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">View disk usage broken down by file type, model, and user.</p>
+          <Link to="/storage" className="btn-secondary text-sm self-start inline-flex items-center gap-1.5">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7M4 7c0-2 1-3 3-3h10c2 0 3 1 3 3M4 7h16M9 11h6" />
+            </svg>
+            View Storage
+          </Link>
+        </div>
         <PreferencesSection user={user} updateUser={updateUser} />
         <PasswordSection />
         {user.is_admin && <UserManagementSection />}

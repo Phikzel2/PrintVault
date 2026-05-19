@@ -9,6 +9,7 @@ import { Home } from "./pages/Home";
 import { ModelDetail } from "./pages/ModelDetail";
 import { Printers } from "./pages/Printers";
 import { Settings } from "./pages/Settings";
+import { Storage } from "./pages/Storage";
 import { Login } from "./pages/Login";
 import { UploadModal } from "./components/UploadModal";
 import { ImportModal } from "./components/ImportModal";
@@ -52,6 +53,7 @@ function AppShell() {
         <Route path="/models/:id" element={<ProtectedRoute><ModelDetail /></ProtectedRoute>} />
         <Route path="/printers" element={<ProtectedRoute><Printers /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/storage" element={<ProtectedRoute><Storage /></ProtectedRoute>} />
       </Routes>
 
       {showUpload && (
