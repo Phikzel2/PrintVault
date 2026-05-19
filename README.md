@@ -182,7 +182,7 @@ Shortcuts are ignored when focus is inside an input, textarea, or select.
 
 ### Settings
 
-Click the gear icon (top-right) to access your settings. The page is organized into cards:
+Click your username in the top-right corner and select **Settings** from the dropdown. The page is organized into cards:
 
 **Printers** — opens the printer profile manager (see [Printer Profiles](#printer-profiles)).
 
