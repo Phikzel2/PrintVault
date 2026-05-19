@@ -21,6 +21,7 @@ A self-hosted 3D print file library — your personal alternative to Printables,
 - **Source tracking** — store the original URL and license for each model
 - **Import from URL** — paste a Printables, Thingiverse, or MakerWorld model URL to preview and import files directly into your library
 - **GCODE metadata** — print time and filament weight from slicer headers displayed inline (PrusaSlicer, OrcaSlicer/Bambu Studio, Cura, Simplify3D)
+- **Storage stats** — disk usage broken down by file type, largest models, and per-user (admin only); accessible from Settings
 - **Settings** — per-user date format preference; admins manage users from the UI
 
 ## Stack
@@ -214,11 +215,12 @@ PrintVault/
 │           ├── models.py     # Model CRUD, pagination, search, visibility
 │           ├── files.py      # Upload, download, delete, Moonraker proxy, GCODE metadata
 │           ├── imports.py    # URL import from Printables, Thingiverse, MakerWorld
+│           ├── stats.py      # Storage stats aggregation
 │           ├── printers.py   # Printer profile CRUD
 │           └── tags.py       # Tag listing
 ├── frontend/                 # React SPA (Vite + Tailwind)
 │   └── src/
-│       ├── pages/            # Home · ModelDetail · Printers · Settings
+│       ├── pages/            # Home · ModelDetail · Printers · Settings · Storage
 │       ├── components/       # Header · ModelCard · FilesSection · ModelViewer · Modals
 │       ├── context/          # AuthContext (JWT + user state) · ThemeContext (light/dark)
 │       ├── api/client.ts     # Axios client with Bearer interceptor
@@ -282,6 +284,9 @@ PATCH  /api/files/{id}/printer      Assign/unassign printer
 PATCH  /api/files/{id}/source       Assign source file (slicer input)
 POST   /api/files/{id}/send         Push GCODE to Moonraker
 GET    /api/files/{id}/metadata     GCODE slicer metadata (print time, filament weight)
+
+# Stats
+GET    /api/stats/storage           Disk usage (by type, top models, by user for admins)
 
 # Printers
 GET    /api/printers                List printers
