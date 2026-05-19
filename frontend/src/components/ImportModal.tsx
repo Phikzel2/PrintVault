@@ -94,7 +94,7 @@ export function ImportModal({ onClose, onSuccess }: Props) {
             <input
               ref={urlInputRef}
               className="input flex-1 text-sm"
-              placeholder="https://www.printables.com/model/... or thingiverse.com/thing:..."
+              placeholder="printables.com/model/... · thingiverse.com/thing:... · makerworld.com/en/models/..."
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && !preview) handleFetch(); }}

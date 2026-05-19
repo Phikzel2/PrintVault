@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import time
 import uuid
 from pathlib import Path
@@ -20,6 +21,37 @@ from ..thumbnail import generate_thumbnail
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["files"])
+
+
+def _parse_gcode_metadata(file_path: str) -> dict:
+    result: dict = {}
+    try:
+        with open(file_path, encoding="utf-8", errors="ignore") as f:
+            for i, line in enumerate(f):
+                if i >= 200:
+                    break
+                line = line.strip()
+                if not line.startswith(";"):
+                    continue
+                # PrusaSlicer / OrcaSlicer / Bambu Studio
+                if m := re.search(r"; estimated printing time.*?=\s*(.+)", line, re.IGNORECASE):
+                    result.setdefault("print_time", m.group(1).strip())
+                if m := re.search(r"; (?:total )?filament (?:weight |used )?\[g\]\s*=\s*([\d.]+)", line, re.IGNORECASE):
+                    result.setdefault("filament_g", round(float(m.group(1)), 1))
+                # Cura: ;TIME:5025
+                if m := re.match(r";TIME:(\d+)$", line):
+                    secs = int(m.group(1))
+                    h, rem = divmod(secs, 3600)
+                    mn, s = divmod(rem, 60)
+                    result.setdefault("print_time", f"{h}h {mn}m" if h else f"{mn}m {s}s")
+                # Simplify3D
+                if m := re.search(r"; Build time:\s*(.+)", line, re.IGNORECASE):
+                    result.setdefault("print_time", m.group(1).strip())
+                if m := re.search(r"; Plastic weight:\s*([\d.]+)\s*grams?", line, re.IGNORECASE):
+                    result.setdefault("filament_g", round(float(m.group(1)), 1))
+    except Exception:
+        pass
+    return result
 
 
 @router.post("/models/{model_id}/files", response_model=schemas.ModelFile, status_code=201)
@@ -140,6 +172,18 @@ def delete_file(file_id: int, db: Session = Depends(get_db), current_user: model
 
     db.delete(db_file)
     db.commit()
+
+
+@router.get("/files/{file_id}/metadata")
+def get_file_metadata(file_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    db_file = db.query(models.ModelFile).filter(models.ModelFile.id == file_id).first()
+    if not db_file:
+        raise HTTPException(status_code=404, detail="File not found")
+    if db_file.file_type != "GCODE":
+        raise HTTPException(status_code=400, detail="Only GCODE files have slicer metadata")
+    if not os.path.exists(db_file.file_path):
+        raise HTTPException(status_code=404, detail="File not found on disk")
+    return _parse_gcode_metadata(db_file.file_path)
 
 
 @router.patch("/files/{file_id}/printer", response_model=schemas.ModelFile)

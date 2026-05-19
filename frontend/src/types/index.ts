@@ -91,6 +91,11 @@ export interface Token {
   user: User;
 }
 
+export interface GcodeMetadata {
+  print_time?: string;
+  filament_g?: number;
+}
+
 export interface ImportFile {
   name: string;
   download_url: string;

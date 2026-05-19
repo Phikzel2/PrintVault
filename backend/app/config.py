@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     jwt_expire_hours: int = 168  # 7 days
     allowed_origins: list[str] = ["*"]
     thingiverse_token: str = ""
+    makerworld_token: str = ""
 
     class Config:
         env_file = ".env"

@@ -80,7 +80,9 @@ def _detect_platform(url: str) -> tuple[str, str]:
         return "thingiverse", m.group(1)
     if m := re.search(r"printables\.com/model/(\d+)", url):
         return "printables", m.group(1)
-    raise HTTPException(400, "Unsupported URL. Paste a Thingiverse or Printables model URL.")
+    if m := re.search(r"makerworld\.com(?:/[a-z-]+)?/models/(\d+)", url):
+        return "makerworld", m.group(1)
+    raise HTTPException(400, "Unsupported URL. Paste a Thingiverse, Printables, or MakerWorld model URL.")
 
 
 async def _fetch_thingiverse(thing_id: str) -> ImportPreview:
@@ -159,6 +161,58 @@ async def _printables_download_url(client: httpx.AsyncClient, file_id: str, mode
     return (result.get("output") or {}).get("link")
 
 
+async def _fetch_makerworld(design_id: str) -> ImportPreview:
+    if not settings.makerworld_token:
+        raise HTTPException(400, "MakerWorld import requires MAKERWORLD_TOKEN to be set in .env")
+    headers = {
+        "Authorization": f"Bearer {settings.makerworld_token}",
+        "Accept": "application/json",
+    }
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        r = await client.get(
+            f"https://makerworld.com/api/v1/design-service/design/{design_id}",
+            headers=headers,
+        )
+        if r.status_code == 401:
+            raise HTTPException(401, "Invalid MAKERWORLD_TOKEN — update it in .env")
+        if r.status_code == 404:
+            raise HTTPException(404, "MakerWorld model not found")
+        r.raise_for_status()
+        design = r.json()
+
+    name = design.get("title") or design.get("name") or f"Model {design_id}"
+    description = _html_to_markdown(design.get("description") or design.get("summary"))
+    cover_url = design.get("cover") or design.get("coverUrl") or design.get("cover_url")
+    raw_tags = design.get("tags") or []
+    tags = [t["name"] if isinstance(t, dict) else str(t) for t in raw_tags]
+    raw_license = design.get("license")
+    license_name = raw_license.get("name") if isinstance(raw_license, dict) else raw_license
+
+    files: list[ImportFile] = []
+    for instance in (design.get("instances") or []):
+        for f in (instance.get("files") or []):
+            dl_url = f.get("url") or f.get("downloadUrl") or f.get("download_url")
+            fname = f.get("name") or f.get("filename") or "model.3mf"
+            if dl_url:
+                files.append(ImportFile(
+                    name=fname,
+                    download_url=dl_url,
+                    size=f.get("size") or f.get("fileSize"),
+                    file_type=detect_file_type(fname),
+                ))
+
+    return ImportPreview(
+        platform="MakerWorld",
+        name=name,
+        description=description,
+        source_url=f"https://makerworld.com/en/models/{design_id}",
+        license=license_name,
+        tags=tags,
+        files=files,
+        thumbnail_url=cover_url or None,
+    )
+
+
 async def _fetch_printables(model_id: str) -> ImportPreview:
     async with httpx.AsyncClient(timeout=20.0) as client:
         r = await client.post(
@@ -220,6 +274,8 @@ async def preview_import(
     try:
         if platform == "thingiverse":
             return await _fetch_thingiverse(model_id)
+        if platform == "makerworld":
+            return await _fetch_makerworld(model_id)
         return await _fetch_printables(model_id)
     except HTTPException:
         raise

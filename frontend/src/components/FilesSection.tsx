@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { modelsApi, filesApi } from "../api/client";
 import { parseUploadError } from "../api/errors";
 import { getFileTypeLabel, formatBytes } from "../utils/format";
-import type { ModelFile, Printer } from "../types";
+import type { GcodeMetadata, ModelFile, Printer } from "../types";
 
 const THUMBNAIL_TYPES = new Set(["STL", "3MF", "OBJ"]);
 
@@ -103,6 +103,11 @@ function GcodeRow({
   const [showPrinter, setShowPrinter] = useState(false);
   const [sendState, setSendState] = useState<SendState>("idle");
   const [sendError, setSendError] = useState("");
+  const [meta, setMeta] = useState<GcodeMetadata | null>(null);
+
+  useEffect(() => {
+    filesApi.getMetadata(file.id).then((r) => setMeta(r.data)).catch(() => {});
+  }, [file.id]);
 
   const assignedPrinter = file.printer_id ? printers.find((p) => p.id === file.printer_id) : null;
   const canSend = !!assignedPrinter?.moonraker_url;
@@ -190,6 +195,12 @@ function GcodeRow({
             )}
         </div>
       </div>
+      {meta && (meta.print_time || meta.filament_g != null) && (
+        <div className="pl-[22px] flex gap-3 text-xs text-gray-400 dark:text-gray-600 -mt-0.5 pb-0.5 select-none">
+          {meta.print_time && <span>{meta.print_time}</span>}
+          {meta.filament_g != null && <span>{meta.filament_g}g</span>}
+        </div>
+      )}
       {showPrinter && printers.length > 0 && (
         <div className="pl-5 flex items-center gap-1">
           <select

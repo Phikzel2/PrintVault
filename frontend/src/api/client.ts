@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { ImportFile, ImportPreview, PaginatedModels, PrintModel, PrintModelSummary, Printer, Tag, Token, User, UserSettings } from "../types";
+import type { GcodeMetadata, ImportFile, ImportPreview, PaginatedModels, PrintModel, PrintModelSummary, Printer, Tag, Token, User, UserSettings } from "../types";
 
 const api = axios.create({
   baseURL: "/api",
@@ -125,4 +125,5 @@ export const filesApi = {
   assignSource: (fileId: number, sourceFileId: number | null) =>
     api.patch(`/files/${fileId}/source`, null, { params: { source_file_id: sourceFileId } }),
   sendToPrinter: (fileId: number) => api.post(`/files/${fileId}/send`),
+  getMetadata: (id: number) => api.get<GcodeMetadata>(`/files/${id}/metadata`),
 };

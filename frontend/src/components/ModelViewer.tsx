@@ -3,6 +3,7 @@ import { Canvas, useLoader } from "@react-three/fiber";
 import { OrbitControls, Center, Bounds, useBounds, useProgress, Html } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { ThreeMFLoader } from "three/examples/jsm/loaders/3MFLoader.js";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import * as THREE from "three";
 import type { ModelFile } from "../types";
 import { filesApi, modelsApi } from "../api/client";
@@ -187,6 +188,32 @@ function ViewerFallback({ modelId, theme }: { modelId: number; theme: string }) 
   );
 }
 
+function OBJModel({ url }: { url: string }) {
+  const obj = useLoader(OBJLoader, url);
+
+  const offset = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(obj);
+    const c = box.getCenter(new THREE.Vector3());
+    return [-c.x, -c.y, -c.z] as [number, number, number];
+  }, [obj]);
+
+  obj.traverse((child) => {
+    if ((child as THREE.Mesh).isMesh) {
+      const mesh = child as THREE.Mesh;
+      if (mesh.geometry) mesh.geometry.computeVertexNormals();
+      mesh.material = new THREE.MeshStandardMaterial({ color: "#6366f1", roughness: 0.4, metalness: 0.1 });
+      mesh.castShadow = true;
+    }
+  });
+
+  return (
+    <group position={offset}>
+      <primitive object={obj} />
+      <FitOnLoad />
+    </group>
+  );
+}
+
 function STLModel({ url }: { url: string }) {
   const geometry = useLoader(STLLoader, url);
   geometry.computeVertexNormals();
@@ -233,7 +260,7 @@ interface ModelViewerProps {
 
 export function ModelViewer({ files }: ModelViewerProps) {
   const { theme } = useTheme();
-  const viewableFiles = files.filter((f) => f.file_type === "STL" || f.file_type === "3MF");
+  const viewableFiles = files.filter((f) => f.file_type === "STL" || f.file_type === "3MF" || f.file_type === "OBJ");
   const [activeFile, setActiveFile] = useState<ModelFile | null>(viewableFiles[0] ?? null);
 
   if (viewableFiles.length === 0) {
@@ -292,6 +319,8 @@ export function ModelViewer({ files }: ModelViewerProps) {
                 <Suspense fallback={<Loader />}>
                   {activeFile.file_type === "STL" ? (
                     <STLModel key={fileUrl} url={fileUrl} />
+                  ) : activeFile.file_type === "OBJ" ? (
+                    <OBJModel key={fileUrl} url={fileUrl} />
                   ) : (
                     <ThreeMFModel key={fileUrl} url={fileUrl} />
                   )}
