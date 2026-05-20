@@ -30,8 +30,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # Bind to loopback only — the backend is reachable via the docker network
+    # from the frontend container. Don't expose it on the host's public IP.
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
 
   frontend:
     build: ./frontend

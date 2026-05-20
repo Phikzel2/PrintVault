@@ -82,8 +82,9 @@ function SlicerButton({ fileId }: { fileId: number }) {
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  const launch = (slicer: typeof SLICERS[number]) => {
-    const fileUrl = window.location.origin + filesApi.downloadUrl(fileId);
+  const launch = async (slicer: typeof SLICERS[number]) => {
+    const signed = await filesApi.signedUrl(fileId);
+    const fileUrl = window.location.origin + signed;
     const a = document.createElement("a");
     a.href = `${slicer.scheme}://open?file=${encodeURIComponent(fileUrl)}`;
     a.click();
@@ -262,6 +263,16 @@ export function ModelViewer({ files }: ModelViewerProps) {
   const { theme } = useTheme();
   const viewableFiles = files.filter((f) => f.file_type === "STL" || f.file_type === "3MF" || f.file_type === "OBJ");
   const [activeFile, setActiveFile] = useState<ModelFile | null>(viewableFiles[0] ?? null);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!activeFile) { setFileUrl(null); return; }
+    filesApi.signedUrl(activeFile.id).then((url) => {
+      if (!cancelled) setFileUrl(url);
+    }).catch(() => { if (!cancelled) setFileUrl(null); });
+    return () => { cancelled = true; };
+  }, [activeFile]);
 
   if (viewableFiles.length === 0) {
     return (
@@ -273,10 +284,6 @@ export function ModelViewer({ files }: ModelViewerProps) {
       </div>
     );
   }
-
-  const fileUrl = activeFile
-    ? `${filesApi.downloadUrl(activeFile.id)}?s=${activeFile.file_size ?? 0}`
-    : null;
 
   return (
     <div className="w-full h-full flex flex-col">

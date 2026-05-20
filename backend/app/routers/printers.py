@@ -1,11 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from .. import models, schemas
-from ..auth import get_current_user
+from ..auth import get_current_user, require_admin
 from ..database import get_db
 
 router = APIRouter(prefix="/printers", tags=["printers"])
 
+
+# Read is open to any authenticated user so the file → printer assignment
+# dropdown keeps working for non-admins. Write is admin-only because the
+# moonraker_url is an SSRF sink and printer profiles are shared globally.
 
 @router.get("", response_model=list[schemas.Printer])
 def list_printers(db: Session = Depends(get_db), _: models.User = Depends(get_current_user)):
@@ -13,7 +17,7 @@ def list_printers(db: Session = Depends(get_db), _: models.User = Depends(get_cu
 
 
 @router.post("", response_model=schemas.Printer, status_code=201)
-def create_printer(data: schemas.PrinterCreate, db: Session = Depends(get_db), _: models.User = Depends(get_current_user)):
+def create_printer(data: schemas.PrinterCreate, db: Session = Depends(get_db), _: models.User = Depends(require_admin)):
     printer = models.Printer(**data.model_dump())
     db.add(printer)
     db.commit()
@@ -22,7 +26,7 @@ def create_printer(data: schemas.PrinterCreate, db: Session = Depends(get_db), _
 
 
 @router.put("/{printer_id}", response_model=schemas.Printer)
-def update_printer(printer_id: int, data: schemas.PrinterCreate, db: Session = Depends(get_db), _: models.User = Depends(get_current_user)):
+def update_printer(printer_id: int, data: schemas.PrinterCreate, db: Session = Depends(get_db), _: models.User = Depends(require_admin)):
     printer = db.query(models.Printer).filter(models.Printer.id == printer_id).first()
     if not printer:
         raise HTTPException(status_code=404, detail="Printer not found")
@@ -34,7 +38,7 @@ def update_printer(printer_id: int, data: schemas.PrinterCreate, db: Session = D
 
 
 @router.delete("/{printer_id}", status_code=204)
-def delete_printer(printer_id: int, db: Session = Depends(get_db), _: models.User = Depends(get_current_user)):
+def delete_printer(printer_id: int, db: Session = Depends(get_db), _: models.User = Depends(require_admin)):
     printer = db.query(models.Printer).filter(models.Printer.id == printer_id).first()
     if not printer:
         raise HTTPException(status_code=404, detail="Printer not found")

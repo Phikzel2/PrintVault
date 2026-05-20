@@ -2,12 +2,12 @@ import json
 import shutil
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
-from ..auth import get_current_user, hash_password, user_to_schema, verify_password
+from ..auth import get_current_user, hash_password, require_admin, user_to_schema, verify_password
 from ..config import settings
 from ..database import get_db
 
@@ -17,12 +17,6 @@ router = APIRouter(prefix="/users", tags=["users"])
 class PasswordUpdate(BaseModel):
     current_password: str
     new_password: str
-
-
-def require_admin(current_user: models.User = Depends(get_current_user)) -> models.User:
-    if not current_user.is_admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
-    return current_user
 
 
 @router.get("", response_model=list[schemas.User])
