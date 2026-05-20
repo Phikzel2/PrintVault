@@ -16,7 +16,7 @@ A self-hosted 3D print file library — your personal alternative to Printables,
 - **Moonraker integration** — push GCODE files directly to a Klipper printer via Moonraker
 - **Printer profiles** — define printers (brand, build volume, Moonraker URL) and link GCODE files
 - **Tags & search** — tag models and filter by tag, file type, or visibility; search bar supports keyword and `#tag` syntax with live autocomplete
-- **Open in slicer** — one-click open of STL/3MF files in OrcaSlicer, Bambu Studio, PrusaSlicer, SuperSlicer, or Ultimaker Cura
+- **Open in slicer** — one-click open of STL/3MF files in OrcaSlicer, PrusaSlicer, SuperSlicer, or Ultimaker Cura
 - **Light / dark mode** — toggle in the header, preference persisted in localStorage
 - **Mobile-friendly** — responsive layout with a collapsible search bar on small screens
 - **PWA** — installable as a home-screen app via Safari (iOS) or Chrome (Android/desktop); opens fullscreen with no browser chrome
