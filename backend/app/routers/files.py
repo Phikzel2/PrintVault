@@ -12,7 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
-from ..auth import create_download_token, get_current_user, get_user_for_download
+from ..auth import create_download_token, get_current_user, get_user_for_download, get_user_via_path_token
 from ..config import settings
 from ..constants import detect_file_type
 from ..database import get_db
@@ -219,6 +219,32 @@ def download_file(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_user_for_download),
 ):
+    db_file = _get_file_for_view(db, file_id, current_user)
+    if not os.path.exists(db_file.file_path):
+        raise HTTPException(status_code=404, detail="File not found on disk")
+    return FileResponse(
+        path=db_file.file_path,
+        filename=db_file.original_filename,
+        media_type="application/octet-stream",
+    )
+
+
+@router.get("/files/{file_id}/d/{token}/{filename:path}")
+def download_file_signed(
+    file_id: int,
+    filename: str,  # cosmetic — used so the URL ends in `.stl`/`.3mf`/etc.
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_user_via_path_token),
+):
+    """Path-style signed download.
+
+    Slicer deep-links (`bambustudio://open?file=…`) and similar protocol
+    handlers derive the saved filename from the URL path, not from
+    Content-Disposition. A query-string `?token=…` ends up in the saved
+    filename. So we put the token in the URL path and end the URL with
+    the original filename — the slicer can then identify the extension
+    and open the file correctly.
+    """
     db_file = _get_file_for_view(db, file_id, current_user)
     if not os.path.exists(db_file.file_path):
         raise HTTPException(status_code=404, detail="File not found on disk")

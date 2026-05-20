@@ -121,9 +121,12 @@ export const statsApi = {
   storage: () => api.get<StorageStats>("/stats/storage"),
 };
 
-async function fetchSignedDownloadUrl(id: number): Promise<string> {
+async function fetchSignedDownloadUrl(id: number, filename: string): Promise<string> {
   const { data } = await api.post<{ token: string }>(`/files/${id}/download-token`);
-  return `/api/files/${id}/download?token=${encodeURIComponent(data.token)}`;
+  // Path-style URL ending in the original filename — slicer deep-links and
+  // Three.js loaders both need the URL to end in `.stl`/`.3mf`/etc., not in
+  // an opaque `?token=…` query string.
+  return `/api/files/${id}/d/${encodeURIComponent(data.token)}/${encodeURIComponent(filename)}`;
 }
 
 async function downloadAndSave(id: number, filename: string): Promise<void> {

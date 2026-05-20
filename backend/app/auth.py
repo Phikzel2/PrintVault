@@ -95,6 +95,36 @@ def require_admin(current_user: models.User = Depends(get_current_user)) -> mode
     return current_user
 
 
+def _user_from_download_token(token: str, file_id: int, db: Session) -> Optional[models.User]:
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
+    except JWTError:
+        return None
+    if payload.get("type") != TOKEN_TYPE_DOWNLOAD or payload.get("fid") != file_id:
+        return None
+    user_id = payload.get("sub")
+    if user_id is None:
+        return None
+    return db.query(models.User).filter(models.User.id == int(user_id)).first()
+
+
+def get_user_via_path_token(
+    file_id: int,
+    token: str,
+    db: Session = Depends(get_db),
+) -> models.User:
+    """Auth for the path-style signed-download endpoint. Slicer deep-links
+    sanitize `?token=` into the saved filename, so the token has to live
+    in the URL path rather than the query string."""
+    user = _user_from_download_token(token, file_id, db)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired download token",
+        )
+    return user
+
+
 def get_user_for_download(
     file_id: int,
     header_token: Optional[str] = Depends(oauth2_scheme_optional),
@@ -118,16 +148,7 @@ def get_user_for_download(
         if user is not None:
             return user
     if query_token:
-        try:
-            payload = jwt.decode(query_token, settings.secret_key, algorithms=["HS256"])
-        except JWTError:
-            raise exc
-        if payload.get("type") != TOKEN_TYPE_DOWNLOAD or payload.get("fid") != file_id:
-            raise exc
-        user_id = payload.get("sub")
-        if user_id is None:
-            raise exc
-        user = db.query(models.User).filter(models.User.id == int(user_id)).first()
+        user = _user_from_download_token(query_token, file_id, db)
         if user is not None:
             return user
     raise exc

@@ -66,7 +66,7 @@ function SlicerIcon({ id }: { id: string }) {
 type SlicerId = typeof SLICERS[number]["id"];
 const PREF_KEY = "preferred-slicer";
 
-function SlicerButton({ fileId }: { fileId: number }) {
+function SlicerButton({ fileId, filename }: { fileId: number; filename: string }) {
   const [preferred, setPreferred] = useState<SlicerId | null>(
     () => localStorage.getItem(PREF_KEY) as SlicerId | null
   );
@@ -83,7 +83,7 @@ function SlicerButton({ fileId }: { fileId: number }) {
   }, [open]);
 
   const launch = async (slicer: typeof SLICERS[number]) => {
-    const signed = await filesApi.signedUrl(fileId);
+    const signed = await filesApi.signedUrl(fileId, filename);
     const fileUrl = window.location.origin + signed;
     const a = document.createElement("a");
     a.href = `${slicer.scheme}://open?file=${encodeURIComponent(fileUrl)}`;
@@ -268,7 +268,7 @@ export function ModelViewer({ files }: ModelViewerProps) {
   useEffect(() => {
     let cancelled = false;
     if (!activeFile) { setFileUrl(null); return; }
-    filesApi.signedUrl(activeFile.id).then((url) => {
+    filesApi.signedUrl(activeFile.id, activeFile.original_filename).then((url) => {
       if (!cancelled) setFileUrl(url);
     }).catch(() => { if (!cancelled) setFileUrl(null); });
     return () => { cancelled = true; };
@@ -339,7 +339,7 @@ export function ModelViewer({ files }: ModelViewerProps) {
           </ViewerErrorBoundary>
         )}
 
-        {activeFile && <SlicerButton fileId={activeFile.id} />}
+        {activeFile && <SlicerButton fileId={activeFile.id} filename={activeFile.original_filename} />}
         <div className="absolute bottom-3 right-3 text-xs text-gray-500 dark:text-gray-600 select-none pointer-events-none">
           Drag to rotate · Scroll to zoom
         </div>
