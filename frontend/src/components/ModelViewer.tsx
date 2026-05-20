@@ -11,7 +11,7 @@ import { useTheme } from "../context/ThemeContext";
 
 const SLICERS = [
   { id: "orca",  name: "Orca Slicer",  scheme: "orcaslicer" },
-  { id: "bambu", name: "Bambu Studio", scheme: "bambustudio" },
+  { id: "bambu", name: "Bambu Studio", scheme: "bambustudioopen" },
   { id: "prusa", name: "PrusaSlicer",  scheme: "prusaslicer" },
   { id: "super", name: "SuperSlicer",  scheme: "superslicer" },
   { id: "cura",  name: "Ultimaker Cura", scheme: "cura" },
