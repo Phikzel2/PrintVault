@@ -13,8 +13,21 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+INSECURE_SECRET_KEYS = {"changeme", "changeme-in-production", "change-me-long-random-string", ""}
+
+
+def _validate_secret_key() -> None:
+    if settings.secret_key.strip() in INSECURE_SECRET_KEYS or len(settings.secret_key) < 32:
+        raise RuntimeError(
+            "SECRET_KEY is missing, default, or too short (<32 chars). "
+            "Generate one with `openssl rand -hex 32` and set it in .env. "
+            "Refusing to start with an insecure key."
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _validate_secret_key()
     Base.metadata.create_all(bind=engine)
     _seed_admin()
     _check_upload_dir()

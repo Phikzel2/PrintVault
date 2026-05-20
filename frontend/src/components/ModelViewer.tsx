@@ -11,7 +11,6 @@ import { useTheme } from "../context/ThemeContext";
 
 const SLICERS = [
   { id: "orca",  name: "Orca Slicer",  scheme: "orcaslicer" },
-  { id: "bambu", name: "Bambu Studio", scheme: "bambustudio" },
   { id: "prusa", name: "PrusaSlicer",  scheme: "prusaslicer" },
   { id: "super", name: "SuperSlicer",  scheme: "superslicer" },
   { id: "cura",  name: "Ultimaker Cura", scheme: "cura" },
@@ -28,15 +27,6 @@ function SlicerIcon({ id }: { id: string }) {
         <path d="M36.381,7.856A19.943,19.943,0,0,0,22.327,41.818L50.345,13.646a19.693,19.693,0,0,0-13.964-5.79" fill="#292826"/>
         <path d="M36.381,7.856A19.636,19.636,0,0,0,26.04,10.782a22.742,22.742,0,0,0-5.91-.745,23.084,23.084,0,0,0-9.477,2.124.632.632,0,0,0,.129,1.191,13.52,13.52,0,0,1,8.069,5.137A20.06,20.06,0,0,0,17.41,33.534a19.873,19.873,0,0,1,2-3.488c1.819-2.5,3.743-3.8,6.585-5.723,2.093-1.416,5-3.077,13.359-6.512a28.421,28.421,0,0,0,6.12-2.821c1.4-.831,2.461-1.615,2.8-2.842.024-.086.045-.172.065-.256A19.655,19.655,0,0,0,36.381,7.856" fill="#262523"/>
         <path d="M39.69,14.551c.727,1.285-.728,3.495-3.249,4.937s-5.154,1.569-5.88.284.727-3.495,3.248-4.937,5.154-1.569,5.881-.284" fill="#fff"/>
-      </svg>
-    );
-    case "bambu": return (
-      <svg viewBox="0 0 128 128" className={cls}>
-        <path d="M99.7586 128H28.2414C12.6464 128 0 115.354 0 99.7586V28.2414C0 12.6464 12.6464 0 28.2414 0H99.7586C115.354 0 128 12.6464 128 28.2414V99.7586C128 115.354 115.354 128 99.7586 128Z" fill="#00AE42"/>
-        <path d="M65.7826 54.5925V101.264H92.3441V65.0528L65.7826 54.5925Z" fill="white"/>
-        <path d="M65.7826 26.7924V50.1337L92.3441 60.5939V26.7924H65.7826Z" fill="white"/>
-        <path d="M35.0999 73.4637V26.7924H61.6615V63.0147L35.0999 73.4637Z" fill="white"/>
-        <path d="M35.0999 101.264V77.9339L61.6615 67.4736V101.264H35.0999Z" fill="white"/>
       </svg>
     );
     case "prusa": return (
@@ -66,7 +56,7 @@ function SlicerIcon({ id }: { id: string }) {
 type SlicerId = typeof SLICERS[number]["id"];
 const PREF_KEY = "preferred-slicer";
 
-function SlicerButton({ fileId }: { fileId: number }) {
+function SlicerButton({ fileId, filename }: { fileId: number; filename: string }) {
   const [preferred, setPreferred] = useState<SlicerId | null>(
     () => localStorage.getItem(PREF_KEY) as SlicerId | null
   );
@@ -82,8 +72,9 @@ function SlicerButton({ fileId }: { fileId: number }) {
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  const launch = (slicer: typeof SLICERS[number]) => {
-    const fileUrl = window.location.origin + filesApi.downloadUrl(fileId);
+  const launch = async (slicer: typeof SLICERS[number]) => {
+    const signed = await filesApi.signedUrl(fileId, filename);
+    const fileUrl = window.location.origin + signed;
     const a = document.createElement("a");
     a.href = `${slicer.scheme}://open?file=${encodeURIComponent(fileUrl)}`;
     a.click();
@@ -262,6 +253,16 @@ export function ModelViewer({ files }: ModelViewerProps) {
   const { theme } = useTheme();
   const viewableFiles = files.filter((f) => f.file_type === "STL" || f.file_type === "3MF" || f.file_type === "OBJ");
   const [activeFile, setActiveFile] = useState<ModelFile | null>(viewableFiles[0] ?? null);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!activeFile) { setFileUrl(null); return; }
+    filesApi.signedUrl(activeFile.id, activeFile.original_filename).then((url) => {
+      if (!cancelled) setFileUrl(url);
+    }).catch(() => { if (!cancelled) setFileUrl(null); });
+    return () => { cancelled = true; };
+  }, [activeFile]);
 
   if (viewableFiles.length === 0) {
     return (
@@ -273,10 +274,6 @@ export function ModelViewer({ files }: ModelViewerProps) {
       </div>
     );
   }
-
-  const fileUrl = activeFile
-    ? `${filesApi.downloadUrl(activeFile.id)}?s=${activeFile.file_size ?? 0}`
-    : null;
 
   return (
     <div className="w-full h-full flex flex-col">
@@ -332,7 +329,7 @@ export function ModelViewer({ files }: ModelViewerProps) {
           </ViewerErrorBoundary>
         )}
 
-        {activeFile && <SlicerButton fileId={activeFile.id} />}
+        {activeFile && <SlicerButton fileId={activeFile.id} filename={activeFile.original_filename} />}
         <div className="absolute bottom-3 right-3 text-xs text-gray-500 dark:text-gray-600 select-none pointer-events-none">
           Drag to rotate · Scroll to zoom
         </div>

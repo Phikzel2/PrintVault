@@ -121,8 +121,31 @@ export const statsApi = {
   storage: () => api.get<StorageStats>("/stats/storage"),
 };
 
+async function fetchSignedDownloadUrl(id: number, filename: string): Promise<string> {
+  const { data } = await api.post<{ token: string }>(`/files/${id}/download-token`);
+  // Path-style URL ending in the original filename — slicer deep-links and
+  // Three.js loaders both need the URL to end in `.stl`/`.3mf`/etc., not in
+  // an opaque `?token=…` query string.
+  return `/api/files/${id}/d/${encodeURIComponent(data.token)}/${encodeURIComponent(filename)}`;
+}
+
+async function downloadAndSave(id: number, filename: string): Promise<void> {
+  const response = await api.get(`/files/${id}/download`, { responseType: "blob" });
+  const blobUrl = window.URL.createObjectURL(response.data);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(blobUrl);
+}
+
 export const filesApi = {
-  downloadUrl: (id: number) => `/api/files/${id}/download`,
+  /** Short-lived signed URL for `<a download>`, Three.js loaders, or slicer deep-links. */
+  signedUrl: fetchSignedDownloadUrl,
+  /** Authenticated programmatic download — triggers a browser save dialog. */
+  download: downloadAndSave,
   delete: (id: number) => api.delete(`/files/${id}`),
   assignPrinter: (fileId: number, printerId: number | null) =>
     api.patch(`/files/${fileId}/printer`, null, { params: { printer_id: printerId } }),

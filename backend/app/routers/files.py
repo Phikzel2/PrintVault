@@ -12,11 +12,38 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
-from ..auth import get_current_user
+from ..auth import create_download_token, get_current_user, get_user_for_download, get_user_via_path_token
 from ..config import settings
 from ..constants import detect_file_type
 from ..database import get_db
 from ..thumbnail import generate_thumbnail
+
+
+def _can_view_model(model: "models.PrintModel", user: "models.User") -> bool:
+    return model.is_public or model.owner_id == user.id or user.is_admin
+
+
+def _can_edit_model(model: "models.PrintModel", user: "models.User") -> bool:
+    return model.owner_id == user.id or user.is_admin
+
+
+def _get_file_for_view(db: Session, file_id: int, user: "models.User") -> "models.ModelFile":
+    f = db.query(models.ModelFile).filter(models.ModelFile.id == file_id).first()
+    if not f:
+        raise HTTPException(status_code=404, detail="File not found")
+    parent = db.query(models.PrintModel).filter(models.PrintModel.id == f.model_id).first()
+    if not parent or not _can_view_model(parent, user):
+        # Mask existence — same 404 whether the file doesn't exist or you can't see it.
+        raise HTTPException(status_code=404, detail="File not found")
+    return f
+
+
+def _get_file_for_edit(db: Session, file_id: int, user: "models.User") -> "models.ModelFile":
+    f = _get_file_for_view(db, file_id, user)
+    parent = db.query(models.PrintModel).filter(models.PrintModel.id == f.model_id).first()
+    if not _can_edit_model(parent, user):
+        raise HTTPException(status_code=403, detail="Access denied")
+    return f
 
 logger = logging.getLogger(__name__)
 
@@ -79,11 +106,24 @@ async def upload_file(
     model = db.query(models.PrintModel).filter(models.PrintModel.id == model_id).first()
     if not model:
         raise HTTPException(status_code=404, detail="Model not found")
-    if model.owner_id != current_user.id and not current_user.is_admin:
+    if not _can_edit_model(model, current_user):
         raise HTTPException(status_code=403, detail="Access denied")
 
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
+
+    # Validate printer_id and source_file_id refer to objects the user is allowed to use
+    if printer_id is not None:
+        if not db.query(models.Printer).filter(models.Printer.id == printer_id).first():
+            raise HTTPException(status_code=400, detail="Printer not found")
+    if source_file_id is not None:
+        source = (
+            db.query(models.ModelFile)
+            .filter(models.ModelFile.id == source_file_id, models.ModelFile.model_id == model_id)
+            .first()
+        )
+        if not source:
+            raise HTTPException(status_code=400, detail="Source file must belong to the same model")
 
     max_bytes = settings.max_file_size_mb * 1024 * 1024
     file_type = detect_file_type(file.filename)
@@ -160,11 +200,52 @@ async def upload_file(
     return db_file
 
 
+@router.post("/files/{file_id}/download-token")
+def issue_download_token(
+    file_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Issue a short-lived token bound to this file_id for the calling user.
+    The token is intended for browser-native loaders (Three.js, slicer
+    deep-links, <a download>) that cannot send an Authorization header."""
+    _get_file_for_view(db, file_id, current_user)  # 404 if no access
+    return {"token": create_download_token(current_user.id, file_id)}
+
+
 @router.get("/files/{file_id}/download")
-def download_file(file_id: int, db: Session = Depends(get_db)):
-    db_file = db.query(models.ModelFile).filter(models.ModelFile.id == file_id).first()
-    if not db_file:
-        raise HTTPException(status_code=404, detail="File not found")
+def download_file(
+    file_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_user_for_download),
+):
+    db_file = _get_file_for_view(db, file_id, current_user)
+    if not os.path.exists(db_file.file_path):
+        raise HTTPException(status_code=404, detail="File not found on disk")
+    return FileResponse(
+        path=db_file.file_path,
+        filename=db_file.original_filename,
+        media_type="application/octet-stream",
+    )
+
+
+@router.get("/files/{file_id}/d/{token}/{filename:path}")
+def download_file_signed(
+    file_id: int,
+    filename: str,  # cosmetic — used so the URL ends in `.stl`/`.3mf`/etc.
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_user_via_path_token),
+):
+    """Path-style signed download.
+
+    Slicer deep-links (`bambustudio://open?file=…`) and similar protocol
+    handlers derive the saved filename from the URL path, not from
+    Content-Disposition. A query-string `?token=…` ends up in the saved
+    filename. So we put the token in the URL path and end the URL with
+    the original filename — the slicer can then identify the extension
+    and open the file correctly.
+    """
+    db_file = _get_file_for_view(db, file_id, current_user)
     if not os.path.exists(db_file.file_path):
         raise HTTPException(status_code=404, detail="File not found on disk")
     return FileResponse(
@@ -176,9 +257,7 @@ def download_file(file_id: int, db: Session = Depends(get_db)):
 
 @router.delete("/files/{file_id}", status_code=204)
 def delete_file(file_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    db_file = db.query(models.ModelFile).filter(models.ModelFile.id == file_id).first()
-    if not db_file:
-        raise HTTPException(status_code=404, detail="File not found")
+    db_file = _get_file_for_edit(db, file_id, current_user)
 
     if os.path.exists(db_file.file_path):
         os.remove(db_file.file_path)
@@ -189,9 +268,7 @@ def delete_file(file_id: int, db: Session = Depends(get_db), current_user: model
 
 @router.get("/files/{file_id}/metadata")
 def get_file_metadata(file_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    db_file = db.query(models.ModelFile).filter(models.ModelFile.id == file_id).first()
-    if not db_file:
-        raise HTTPException(status_code=404, detail="File not found")
+    db_file = _get_file_for_view(db, file_id, current_user)
     if db_file.file_type != "GCODE":
         raise HTTPException(status_code=400, detail="Only GCODE files have slicer metadata")
     if not os.path.exists(db_file.file_path):
@@ -201,9 +278,10 @@ def get_file_metadata(file_id: int, db: Session = Depends(get_db), current_user:
 
 @router.patch("/files/{file_id}/printer", response_model=schemas.ModelFile)
 def assign_printer(file_id: int, printer_id: Optional[int] = None, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    db_file = db.query(models.ModelFile).filter(models.ModelFile.id == file_id).first()
-    if not db_file:
-        raise HTTPException(status_code=404, detail="File not found")
+    db_file = _get_file_for_edit(db, file_id, current_user)
+    if printer_id is not None:
+        if not db.query(models.Printer).filter(models.Printer.id == printer_id).first():
+            raise HTTPException(status_code=404, detail="Printer not found")
     db_file.printer_id = printer_id
     db.commit()
     db.refresh(db_file)
@@ -218,9 +296,7 @@ async def send_to_printer(
 ):
     import httpx
 
-    db_file = db.query(models.ModelFile).filter(models.ModelFile.id == file_id).first()
-    if not db_file:
-        raise HTTPException(status_code=404, detail="File not found")
+    db_file = _get_file_for_edit(db, file_id, current_user)
     if db_file.file_type != "GCODE":
         raise HTTPException(status_code=400, detail="Only GCODE files can be sent to a printer")
     if not db_file.printer_id:
@@ -256,9 +332,7 @@ async def send_to_printer(
 
 @router.patch("/files/{file_id}/source", response_model=schemas.ModelFile)
 def assign_source_file(file_id: int, source_file_id: Optional[int] = None, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    db_file = db.query(models.ModelFile).filter(models.ModelFile.id == file_id).first()
-    if not db_file:
-        raise HTTPException(status_code=404, detail="File not found")
+    db_file = _get_file_for_edit(db, file_id, current_user)
     if source_file_id is not None:
         source = db.query(models.ModelFile).filter(models.ModelFile.id == source_file_id).first()
         if not source:
