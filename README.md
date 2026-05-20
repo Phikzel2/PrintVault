@@ -104,6 +104,13 @@ openssl rand -hex 32
 
 Open the UI and log in with your admin credentials. Sessions last 7 days by default (configurable via `JWT_EXPIRE_HOURS`).
 
+![Login](docs/screenshots/pv_login.png)
+
+### Library
+
+![Library (light)](docs/screenshots/pv_dashboard_light.png)
+![Library (dark)](docs/screenshots/pv_dashboard_dark.png)
+
 ### Importing from Printables, Thingiverse, or MakerWorld
 
 Click **Import URL** in the header and paste any public model URL:
@@ -120,11 +127,20 @@ PrintVault fetches the model metadata and shows a preview with name, description
 
 **MakerWorld** requires a Bambu Lab account JWT — log in to makerworld.com, copy the Bearer token from any authenticated API request, and add `MAKERWORLD_TOKEN=your_token` to `.env`.
 
+![Import from URL](docs/screenshots/pv_import.png)
+
 ### Adding a Model
 
 1. Click **+ New Model** (or drag files onto the library view).
-2. Enter a name; optionally add a description, source URL, license, and tags.
-3. Upload one or more files — thumbnails are generated automatically for STL/3MF/OBJ.
+2. Upload one or more files — thumbnails are generated automatically for STL/3MF/OBJ.
+3. Enter a name; optionally add a description, source URL, license, and tags.
+
+![Add Model — Files](docs/screenshots/pv_newmodel_files.png)
+![Add Model — Details](docs/screenshots/pv_newmodel_details.png)
+
+### Model Detail
+
+![Model detail with 3D viewer](docs/screenshots/pv_modeldetails.png)
 
 ### Managing Files
 
@@ -168,6 +184,8 @@ Once a printer has a **Moonraker URL**, a send button appears next to any GCODE 
 - **Multiple tags** — combine tags in one query: `#functional #enclosureparts`
 - **Sidebar filters** — click any tag, file type, or visibility filter; the search bar stays in sync with the active filters
 - Combine all filters freely for precise results
+
+![Search with tags](docs/screenshots/pv_search.png)
 
 ### Keyboard Shortcuts
 
