@@ -85,8 +85,17 @@ function SlicerButton({ fileId, filename }: { fileId: number; filename: string }
   const launch = async (slicer: typeof SLICERS[number]) => {
     const signed = await filesApi.signedUrl(fileId, filename);
     const fileUrl = window.location.origin + signed;
+    // OrcaSlicer / PrusaSlicer / SuperSlicer / Cura all use `://open?file=<URL>`.
+    // Bambu Studio is the odd one out: it strips its scheme, prepends `https://`
+    // to whatever follows, and fetches that — same pattern MakerWorld uses for
+    // "Open in Bambu Studio". So this only works over HTTPS (Bambu will refuse
+    // an http://localhost URL).
+    const deepLink =
+      slicer.id === "bambu"
+        ? `${slicer.scheme}://${fileUrl.replace(/^https?:\/\//, "")}`
+        : `${slicer.scheme}://open?file=${encodeURIComponent(fileUrl)}`;
     const a = document.createElement("a");
-    a.href = `${slicer.scheme}://open?file=${encodeURIComponent(fileUrl)}`;
+    a.href = deepLink;
     a.click();
     setPreferred(slicer.id);
     localStorage.setItem(PREF_KEY, slicer.id);
