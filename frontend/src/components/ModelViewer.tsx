@@ -254,13 +254,16 @@ export function ModelViewer({ files }: ModelViewerProps) {
   const viewableFiles = files.filter((f) => f.file_type === "STL" || f.file_type === "3MF" || f.file_type === "OBJ");
   const [activeFile, setActiveFile] = useState<ModelFile | null>(viewableFiles[0] ?? null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [urlError, setUrlError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    if (!activeFile) { setFileUrl(null); return; }
+    if (!activeFile) { setFileUrl(null); setUrlError(false); return; }
+    setFileUrl(null);
+    setUrlError(false);
     filesApi.signedUrl(activeFile.id, activeFile.original_filename).then((url) => {
       if (!cancelled) setFileUrl(url);
-    }).catch(() => { if (!cancelled) setFileUrl(null); });
+    }).catch(() => { if (!cancelled) setUrlError(true); });
     return () => { cancelled = true; };
   }, [activeFile]);
 
@@ -296,7 +299,9 @@ export function ModelViewer({ files }: ModelViewerProps) {
       )}
 
       <div className="flex-1 relative">
-        {fileUrl && activeFile && (
+        {urlError && activeFile ? (
+          <ViewerFallback modelId={activeFile.model_id} theme={theme} />
+        ) : fileUrl && activeFile ? (
           <ViewerErrorBoundary
             key={fileUrl}
             fallback={<ViewerFallback modelId={activeFile.model_id} theme={theme} />}
@@ -327,7 +332,7 @@ export function ModelViewer({ files }: ModelViewerProps) {
               <OrbitControls makeDefault enableDamping dampingFactor={0.05} />
             </Canvas>
           </ViewerErrorBoundary>
-        )}
+        ) : null}
 
         {activeFile && <SlicerButton fileId={activeFile.id} filename={activeFile.original_filename} />}
         <div className="absolute bottom-3 right-3 text-xs text-gray-500 dark:text-gray-600 select-none pointer-events-none">

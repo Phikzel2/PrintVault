@@ -61,12 +61,16 @@ def _check_upload_dir():
             os.makedirs(path, exist_ok=True)
             logger.info("Created upload directory: %s", path)
         except OSError as e:
-            logger.error("UPLOAD DIR ERROR: Cannot create %s — %s", path, e)
-            return
-    if os.access(path, os.W_OK):
-        logger.info("Upload directory OK: %s", path)
-    else:
-        logger.error("UPLOAD DIR ERROR: %s exists but is NOT writable. Fix volume permissions.", path)
+            raise RuntimeError(
+                f"Cannot create upload directory {path}: {e.strerror}. "
+                "Fix the volume mount or permissions before starting."
+            ) from e
+    if not os.access(path, os.W_OK):
+        raise RuntimeError(
+            f"Upload directory {path} exists but is not writable. "
+            "Fix volume permissions before starting."
+        )
+    logger.info("Upload directory OK: %s", path)
 
 
 app = FastAPI(title="PrintVault", version="2.0.0", lifespan=lifespan, redirect_slashes=False)

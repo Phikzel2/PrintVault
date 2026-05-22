@@ -112,10 +112,12 @@ export function Home() {
   const handleBatchVisibility = async (isPublic: boolean) => {
     setBatchBusy(true);
     try {
-      await Promise.all([...selectedIds].map(id => modelsApi.setVisibility(id, isPublic)));
-      showToast(`Made ${selectedIds.size} model${selectedIds.size !== 1 ? "s" : ""} ${isPublic ? "public" : "private"}`);
+      const ids = [...selectedIds];
+      await Promise.all(ids.map(id => modelsApi.setVisibility(id, isPublic)));
+      const idSet = new Set(ids);
+      setModels(prev => prev.map(m => idSet.has(m.id) ? { ...m, is_public: isPublic } : m));
+      showToast(`Made ${ids.length} model${ids.length !== 1 ? "s" : ""} ${isPublic ? "public" : "private"}`);
       clearSelection();
-      loadPage(1, true);
     } finally { setBatchBusy(false); }
   };
 
@@ -126,22 +128,33 @@ export function Home() {
     setBatchBusy(true);
     try {
       const selected = models.filter(m => selectedIds.has(m.id));
-      await Promise.all(selected.map(m =>
+      const responses = await Promise.all(selected.map(m =>
         modelsApi.update(m.id, { tags: [...new Set([...m.tags.map(t => t.name), tag])] })
       ));
-      showToast(`Tag "${tag}" added to ${selectedIds.size} model${selectedIds.size !== 1 ? "s" : ""}`);
+      const tagsById = new Map(responses.map(r => [r.data.id, r.data.tags]));
+      setModels(prev => prev.map(m =>
+        tagsById.has(m.id) ? { ...m, tags: tagsById.get(m.id)! } : m
+      ));
+      // If this was a new tag, surface it in the sidebar without re-fetching everything.
+      const newTag = responses.flatMap(r => r.data.tags).find(t => t.name === tag);
+      if (newTag) {
+        setTags(prev => prev.some(t => t.id === newTag.id) ? prev : [...prev, newTag]);
+      }
+      showToast(`Tag "${tag}" added to ${selected.length} model${selected.length !== 1 ? "s" : ""}`);
       clearSelection();
-      loadPage(1, true);
     } finally { setBatchBusy(false); }
   };
 
   const handleBatchDelete = async () => {
     setBatchBusy(true);
     try {
-      await Promise.all([...selectedIds].map(id => modelsApi.delete(id)));
-      showToast(`Deleted ${selectedIds.size} model${selectedIds.size !== 1 ? "s" : ""}`);
+      const ids = [...selectedIds];
+      await Promise.all(ids.map(id => modelsApi.delete(id)));
+      const idSet = new Set(ids);
+      setModels(prev => prev.filter(m => !idSet.has(m.id)));
+      setTotal(prev => Math.max(0, prev - ids.length));
+      showToast(`Deleted ${ids.length} model${ids.length !== 1 ? "s" : ""}`);
       clearSelection();
-      loadPage(1, true);
     } finally { setBatchBusy(false); }
   };
 
