@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 
 class UserSettings(BaseModel):
@@ -89,10 +89,17 @@ class ModelFile(ModelFileBase):
 
 
 class PrintModelBase(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     source_url: Optional[str] = None
     license: Optional[str] = None
+
+    @field_validator("name")
+    @classmethod
+    def _name_not_blank(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("name must not be blank")
+        return v.strip()
 
 
 class PrintModelCreate(PrintModelBase):
@@ -100,11 +107,18 @@ class PrintModelCreate(PrintModelBase):
 
 
 class PrintModelUpdate(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     source_url: Optional[str] = None
     license: Optional[str] = None
     tags: Optional[list[str]] = None
+
+    @field_validator("name")
+    @classmethod
+    def _name_not_blank(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not v.strip():
+            raise ValueError("name must not be blank")
+        return v.strip() if v is not None else v
 
 
 class PrintModel(PrintModelBase):

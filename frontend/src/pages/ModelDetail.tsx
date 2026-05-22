@@ -56,8 +56,13 @@ export function ModelDetail() {
 
   const saveEdit = async () => {
     if (!model) return;
+    const trimmedName = editData.name.trim();
+    if (!trimmedName) {
+      showToast("Name is required", "error");
+      return;
+    }
     await modelsApi.update(modelId, {
-      name: editData.name,
+      name: trimmedName,
       description: editData.description || undefined,
       source_url: editData.source_url || undefined,
       license: editData.license || undefined,
@@ -181,7 +186,7 @@ export function ModelDetail() {
                 {model.thumbnail_path && (
                   <div className="mt-3 -mx-4 overflow-hidden rounded-none">
                     <img
-                      src={`${modelsApi.thumbnailUrl(modelId)}?v=${encodeURIComponent(model.thumbnail_path)}&theme=${theme}`}
+                      src={`${model.thumbnail_path}&theme=${theme}`}
                       alt={model.name}
                       onClick={() => setLightbox(true)}
                       className="w-full object-contain max-h-40 cursor-zoom-in"
@@ -335,7 +340,7 @@ export function ModelDetail() {
           onClick={() => setLightbox(false)}
         >
           <img
-            src={`${modelsApi.thumbnailUrl(modelId)}?v=${encodeURIComponent(model.thumbnail_path)}&theme=${theme}`}
+            src={`${model.thumbnail_path}&theme=${theme}`}
             alt={model.name}
             className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
           />
