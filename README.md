@@ -23,7 +23,7 @@ A self-hosted 3D print file library — your personal alternative to Printables,
 - **Source tracking** — store the original URL and license for each model
 - **Import from URL** — paste a Printables, Thingiverse, or MakerWorld model URL to preview and import files directly into your library
 - **GCODE metadata** — print time and filament weight from slicer headers displayed inline (PrusaSlicer, OrcaSlicer/Bambu Studio, Cura, Simplify3D)
-- **Storage stats** — disk usage broken down by file type, largest models, and per-user (admin only); accessible from Settings
+- **Storage stats** *(admin only)* — disk usage broken down by file type, largest models, and per-user; accessible from Settings
 - **Settings** — per-user date format preference; admins manage users from the UI
 
 ## Stack
@@ -206,7 +206,7 @@ Click your username in the top-right corner and select **Settings** from the dro
 
 **Printers** — opens the printer profile manager (see [Printer Profiles](#printer-profiles)).
 
-**Storage** — opens the storage stats page showing total disk usage, breakdown by file type, largest models, and per-user usage (admins only).
+**Storage** *(admin only)* — opens the storage stats page showing total disk usage, breakdown by file type, largest models, and per-user usage.
 
 **Preferences**
 - **Date format** — choose DD/MM/YYYY, MM/DD/YYYY, or YYYY-MM-DD; applied to all dates in the UI
