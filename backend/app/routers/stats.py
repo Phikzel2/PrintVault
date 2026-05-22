@@ -3,7 +3,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from .. import models
-from ..auth import get_current_user
+from ..auth import require_admin
 from ..database import get_db
 
 router = APIRouter(prefix="/stats", tags=["stats"])
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/stats", tags=["stats"])
 @router.get("/storage")
 def storage_stats(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    _: models.User = Depends(require_admin),
 ):
     total_bytes, total_files = db.query(
         func.coalesce(func.sum(models.ModelFile.file_size), 0),
@@ -45,7 +45,21 @@ def storage_stats(
         .all()
     )
 
-    result: dict = {
+    by_user_rows = (
+        db.query(
+            models.User.id,
+            models.User.username,
+            func.count(models.ModelFile.id).label("file_count"),
+            func.coalesce(func.sum(models.ModelFile.file_size), 0).label("bytes"),
+        )
+        .join(models.PrintModel, models.PrintModel.owner_id == models.User.id)
+        .join(models.ModelFile, models.ModelFile.model_id == models.PrintModel.id)
+        .group_by(models.User.id, models.User.username)
+        .order_by(func.sum(models.ModelFile.file_size).desc())
+        .all()
+    )
+
+    return {
         "total_bytes": total_bytes,
         "total_files": total_files,
         "total_models": total_models,
@@ -57,25 +71,8 @@ def storage_stats(
             {"model_id": r[0], "name": r[1], "file_count": r[2], "bytes": r[3]}
             for r in top_model_rows
         ],
-    }
-
-    if current_user.is_admin:
-        by_user_rows = (
-            db.query(
-                models.User.id,
-                models.User.username,
-                func.count(models.ModelFile.id).label("file_count"),
-                func.coalesce(func.sum(models.ModelFile.file_size), 0).label("bytes"),
-            )
-            .join(models.PrintModel, models.PrintModel.owner_id == models.User.id)
-            .join(models.ModelFile, models.ModelFile.model_id == models.PrintModel.id)
-            .group_by(models.User.id, models.User.username)
-            .order_by(func.sum(models.ModelFile.file_size).desc())
-            .all()
-        )
-        result["by_user"] = [
+        "by_user": [
             {"user_id": r[0], "username": r[1], "file_count": r[2], "bytes": r[3]}
             for r in by_user_rows
-        ]
-
-    return result
+        ],
+    }
