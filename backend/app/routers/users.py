@@ -10,6 +10,7 @@ from .. import models, schemas
 from ..auth import get_current_user, hash_password, require_admin, user_to_schema, verify_password
 from ..config import settings
 from ..database import get_db
+from .models import prune_orphan_tags
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -72,6 +73,10 @@ def delete_user(
         db.delete(m)
 
     db.delete(user)
+    # Some tags may now reference zero models — drop them so the tag sidebar
+    # doesn't accumulate zombie entries. Must run before commit so the flush
+    # inside prune_orphan_tags sees the pending cascade-deletes.
+    prune_orphan_tags(db)
     db.commit()
 
 

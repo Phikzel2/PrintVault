@@ -311,6 +311,9 @@ def set_thumbnail(
     return {"thumbnail_path": model.thumbnail_path}
 
 
+MAX_THUMBNAIL_BYTES = 25 * 1024 * 1024  # 25 MB — generous for phone photos, tight enough to block bombs
+
+
 @router.post("/{model_id}/thumbnail/upload", status_code=200)
 async def upload_thumbnail_image(
     model_id: int,
@@ -331,6 +334,11 @@ async def upload_thumbnail_image(
     content = await file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Empty file")
+    if len(content) > MAX_THUMBNAIL_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Image too large: {len(content) / 1024 / 1024:.1f} MB exceeds the {MAX_THUMBNAIL_BYTES // 1024 // 1024} MB thumbnail limit",
+        )
 
     try:
         img = Image.open(io.BytesIO(content)).convert("RGB")
