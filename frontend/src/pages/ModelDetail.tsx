@@ -58,7 +58,7 @@ export function ModelDetail() {
     if (!model) return;
     const trimmedName = editData.name.trim();
     if (!trimmedName) {
-      showToast("Name is required");
+      showToast("Name is required", "error");
       return;
     }
     await modelsApi.update(modelId, {
