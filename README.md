@@ -127,7 +127,9 @@ PrintVault fetches the model metadata and shows a preview with name, description
 
 **Thingiverse** requires a free API token — register an app at [thingiverse.com/developers](https://www.thingiverse.com/developers) and add `THINGIVERSE_TOKEN=your_token` to `.env`.
 
-**MakerWorld** requires a Bambu Lab account JWT — log in to makerworld.com, copy the Bearer token from any authenticated API request, and add `MAKERWORLD_TOKEN=your_token` to `.env`.
+**MakerWorld** requires your Bambu Lab session token — open https://makerworld.com in DevTools → **Application → Cookies → makerworld.com**, copy the value of the `token` cookie (a long opaque string starting with `AAB...`, *not* a JWT), and add `MAKERWORLD_TOKEN=<that value>` to `.env`. The token expires periodically; if imports start failing with "Invalid token", grab a fresh one.
+
+> **Heads up:** MakerWorld actively blocks server-side file downloads with a captcha challenge. PrintVault still imports the metadata (title, description, tags, license, cover image) when the file list is blocked — you'll then need to download the zip from the MakerWorld page yourself and drag the files into the new model. When the bot-detection is quiet, the file list and downloads work normally.
 
 ![Import from URL](docs/screenshots/pv_import.png)
 

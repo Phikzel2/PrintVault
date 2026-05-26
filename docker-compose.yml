@@ -25,6 +25,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-["http://localhost:3120"]}
       THINGIVERSE_TOKEN: ${THINGIVERSE_TOKEN:-}
+      MAKERWORLD_TOKEN: ${MAKERWORLD_TOKEN:-}
     volumes:
       - ./data/uploads:/data/uploads
     depends_on:
