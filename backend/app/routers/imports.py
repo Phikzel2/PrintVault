@@ -3,6 +3,7 @@ import logging
 import re
 import time
 import uuid
+import zipfile
 from pathlib import Path
 
 import html2text
@@ -161,14 +162,51 @@ async def _printables_download_url(client: httpx.AsyncClient, file_id: str, mode
     return (result.get("output") or {}).get("link")
 
 
+# Sentinel URL scheme for files that live inside a MakerWorld all.zip bundle.
+# `confirm_import` recognises it and re-fetches a fresh zip URL (the upstream
+# signed URLs are valid for ~5 minutes), then extracts the requested entry.
+MAKERWORLD_ZIP_PREFIX = "makerworld-zip://"
+
+
+def _makerworld_headers() -> dict[str, str]:
+    # Bearer header works on api endpoints; do NOT also send the cookie or
+    # MakerWorld returns 403 "Please log in to download models" — sending both
+    # forms of auth confuses their validator.
+    return {
+        "Authorization": f"Bearer {settings.makerworld_token}",
+        "Accept": "*/*",
+        "x-bbl-app-source": "makerworld",
+        "x-bbl-client-name": "MakerWorld",
+        "x-bbl-client-type": "web",
+        "x-bbl-client-version": "00.00.00.01",
+    }
+
+
+async def _makerworld_zip_url(client: httpx.AsyncClient, design_id: str) -> str:
+    r = await client.get(
+        f"https://makerworld.com/api/v1/design-service/design/{design_id}/model"
+        "?modelType=all&type=download",
+        headers=_makerworld_headers(),
+    )
+    if r.status_code == 401:
+        raise HTTPException(401, "Invalid MAKERWORLD_TOKEN — update it in .env")
+    if r.status_code == 403:
+        raise HTTPException(403, "MakerWorld refused the download — token may be expired")
+    r.raise_for_status()
+    data = r.json()
+    url = data.get("url")
+    if not url:
+        raise HTTPException(502, "MakerWorld did not return a download URL")
+    return url
+
+
 async def _fetch_makerworld(design_id: str) -> ImportPreview:
     if not settings.makerworld_token:
         raise HTTPException(400, "MakerWorld import requires MAKERWORLD_TOKEN to be set in .env")
-    headers = {
-        "Authorization": f"Bearer {settings.makerworld_token}",
-        "Accept": "application/json",
-    }
-    async with httpx.AsyncClient(timeout=20.0) as client:
+
+    headers = _makerworld_headers()
+    files: list[ImportFile] = []
+    async with httpx.AsyncClient(timeout=60.0) as client:
         r = await client.get(
             f"https://makerworld.com/api/v1/design-service/design/{design_id}",
             headers=headers,
@@ -180,6 +218,33 @@ async def _fetch_makerworld(design_id: str) -> ImportPreview:
         r.raise_for_status()
         design = r.json()
 
+        # Best-effort file listing. MakerWorld's `/model?modelType=all` endpoint
+        # frequently returns HTTP 418 with a captcha challenge for server-side
+        # callers — the Cloudflare `cf_clearance` cookie that a browser obtains
+        # is IP-bound and can't be reused here. If it fails, return the
+        # metadata anyway so the user can create the model with title /
+        # description / tags / cover and add the files manually.
+        try:
+            zip_url = await _makerworld_zip_url(client, design_id)
+            zr = await client.get(zip_url)
+            zr.raise_for_status()
+            with zipfile.ZipFile(io.BytesIO(zr.content)) as zf:
+                for info in zf.infolist():
+                    if info.is_dir():
+                        continue
+                    files.append(ImportFile(
+                        name=info.filename,
+                        # Sentinel — confirm_import re-fetches the zip and extracts this entry.
+                        download_url=f"{MAKERWORLD_ZIP_PREFIX}{design_id}/{info.filename}",
+                        size=info.file_size,
+                        file_type=detect_file_type(info.filename),
+                    ))
+        except Exception as e:
+            logger.warning(
+                "MakerWorld file list unavailable for design %s (likely bot-detection): %s",
+                design_id, e,
+            )
+
     name = design.get("title") or design.get("name") or f"Model {design_id}"
     description = _html_to_markdown(design.get("description") or design.get("summary"))
     cover_url = design.get("cover") or design.get("coverUrl") or design.get("cover_url")
@@ -187,19 +252,6 @@ async def _fetch_makerworld(design_id: str) -> ImportPreview:
     tags = [t["name"] if isinstance(t, dict) else str(t) for t in raw_tags]
     raw_license = design.get("license")
     license_name = raw_license.get("name") if isinstance(raw_license, dict) else raw_license
-
-    files: list[ImportFile] = []
-    for instance in (design.get("instances") or []):
-        for f in (instance.get("files") or []):
-            dl_url = f.get("url") or f.get("downloadUrl") or f.get("download_url")
-            fname = f.get("name") or f.get("filename") or "model.3mf"
-            if dl_url:
-                files.append(ImportFile(
-                    name=fname,
-                    download_url=dl_url,
-                    size=f.get("size") or f.get("fileSize"),
-                    file_type=detect_file_type(fname),
-                ))
 
     return ImportPreview(
         platform="MakerWorld",
@@ -294,8 +346,8 @@ async def confirm_import(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    if not data.files:
-        raise HTTPException(400, "Select at least one file to import")
+    # Empty files is allowed — metadata-only imports happen when MakerWorld
+    # bot-detection blocks the file list. User can add files manually after.
 
     db_model = models.PrintModel(
         name=data.name,
@@ -348,6 +400,23 @@ async def confirm_import(
             except Exception as e:
                 logger.warning("Could not download platform thumbnail: %s", e)
 
+        # MakerWorld imports share a single zip — fetch it once, lazily, and
+        # extract each requested entry. Keyed by design_id so a single import
+        # batch only downloads once.
+        makerworld_zips: dict[str, bytes] = {}
+
+        async def _resolve_makerworld_entry(sentinel: str) -> bytes:
+            # Format: makerworld-zip://{design_id}/{filename...}
+            rest = sentinel[len(MAKERWORLD_ZIP_PREFIX):]
+            design_id, _, entry_name = rest.partition("/")
+            if design_id not in makerworld_zips:
+                zip_url = await _makerworld_zip_url(client, design_id)
+                zr = await client.get(zip_url)
+                zr.raise_for_status()
+                makerworld_zips[design_id] = zr.content
+            with zipfile.ZipFile(io.BytesIO(makerworld_zips[design_id])) as zf:
+                return zf.read(entry_name)
+
         for f in data.files:
             ext = Path(f.name).suffix.lower() or ".bin"
             unique_name = f"{uuid.uuid4().hex}{ext}"
@@ -355,9 +424,12 @@ async def confirm_import(
 
             logger.info("Downloading %s from %s", f.name, f.download_url)
             try:
-                r = await client.get(f.download_url)
-                r.raise_for_status()
-                content = r.content
+                if f.download_url.startswith(MAKERWORLD_ZIP_PREFIX):
+                    content = await _resolve_makerworld_entry(f.download_url)
+                else:
+                    r = await client.get(f.download_url)
+                    r.raise_for_status()
+                    content = r.content
             except Exception as e:
                 logger.warning("Skipping %s — download failed: %s | url: %s", f.name, e, f.download_url)
                 continue

@@ -211,7 +211,20 @@ export function ImportModal({ onClose, onSuccess }: Props) {
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-yellow-500">No downloadable files found for this model.</p>
+                <div className="text-sm text-yellow-500 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 leading-relaxed">
+                  {preview.platform === "MakerWorld" ? (
+                    <>
+                      <p className="font-medium">No files available from MakerWorld.</p>
+                      <p className="mt-1 text-yellow-600 dark:text-yellow-400">
+                        MakerWorld blocks automated file downloads. Import the metadata now and
+                        drag the model files into the new model afterwards (you can download them
+                        from the <a href={preview.source_url} target="_blank" rel="noopener noreferrer" className="underline">MakerWorld page</a>).
+                      </p>
+                    </>
+                  ) : (
+                    <p>No downloadable files found for this model.</p>
+                  )}
+                </div>
               )}
             </>
           )}
@@ -226,10 +239,12 @@ export function ImportModal({ onClose, onSuccess }: Props) {
             <button
               className="btn-primary"
               onClick={handleImport}
-              disabled={importing || selected.size === 0}
+              disabled={importing || (preview.files.length > 0 && selected.size === 0)}
             >
               {importing
                 ? "Importing…"
+                : preview.files.length === 0
+                ? "Import metadata"
                 : `Import ${selected.size} file${selected.size !== 1 ? "s" : ""}`}
             </button>
           </div>
