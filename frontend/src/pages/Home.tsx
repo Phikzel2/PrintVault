@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { modelsApi, tagsApi } from "../api/client";
 import { ModelCard } from "../components/ModelCard";
 import { UploadModal } from "../components/UploadModal";
+import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import type { PrintModelSummary, Tag } from "../types";
 
@@ -18,6 +19,8 @@ function isFileDrag(e: React.DragEvent): boolean {
 export function Home() {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const multiUser = !!user?.multi_user_mode;
   const [searchParams, setSearchParams] = useSearchParams();
 
   const search = searchParams.get("search") ?? "";
@@ -227,20 +230,22 @@ export function Home() {
               </div>
             </div>
 
-            <div>
-              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wider mb-2">Visibility</h3>
-              <div className="flex flex-col gap-1">
-                {(["", "public", "private"] as const).map((v) => (
-                  <button
-                    key={v || "all"}
-                    onClick={() => setParam("visibility", v === activeVisibility ? "" : v)}
-                    className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${activeVisibility === v ? "bg-brand-600/20 text-brand-400" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"}`}
-                  >
-                    {v === "" ? "All" : v === "public" ? "Public" : "Private"}
-                  </button>
-                ))}
+            {multiUser && (
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wider mb-2">Visibility</h3>
+                <div className="flex flex-col gap-1">
+                  {(["", "public", "private"] as const).map((v) => (
+                    <button
+                      key={v || "all"}
+                      onClick={() => setParam("visibility", v === activeVisibility ? "" : v)}
+                      className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${activeVisibility === v ? "bg-brand-600/20 text-brand-400" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"}`}
+                    >
+                      {v === "" ? "All" : v === "public" ? "Public" : "Private"}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {tags.length > 0 && (
               <div>
@@ -405,18 +410,22 @@ export function Home() {
                     Tag
                   </button>
                 </form>
-                {/* Row 3: visibility + delete */}
+                {/* Row 3: visibility + delete (visibility hidden in single-user mode) */}
                 <div className="flex items-center gap-2">
-                  <button onClick={() => handleBatchVisibility(true)} disabled={batchBusy}
-                    className="btn-secondary text-xs py-1.5 px-3 disabled:opacity-50 flex-1">
-                    Make public
-                  </button>
-                  <button onClick={() => handleBatchVisibility(false)} disabled={batchBusy}
-                    className="btn-secondary text-xs py-1.5 px-3 disabled:opacity-50 flex-1">
-                    Make private
-                  </button>
+                  {multiUser && (
+                    <>
+                      <button onClick={() => handleBatchVisibility(true)} disabled={batchBusy}
+                        className="btn-secondary text-xs py-1.5 px-3 disabled:opacity-50 flex-1">
+                        Make public
+                      </button>
+                      <button onClick={() => handleBatchVisibility(false)} disabled={batchBusy}
+                        className="btn-secondary text-xs py-1.5 px-3 disabled:opacity-50 flex-1">
+                        Make private
+                      </button>
+                    </>
+                  )}
                   <button onClick={() => setConfirmBatchDelete(true)} disabled={batchBusy}
-                    className="text-xs px-3 py-1.5 text-red-500 hover:text-red-400 transition-colors disabled:opacity-50 shrink-0">
+                    className={`text-xs px-3 py-1.5 text-red-500 hover:text-red-400 transition-colors disabled:opacity-50 ${multiUser ? "shrink-0" : "flex-1"}`}>
                     Delete
                   </button>
                 </div>
@@ -445,15 +454,19 @@ export function Home() {
                     Tag
                   </button>
                 </form>
-                <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 shrink-0" />
-                <button onClick={() => handleBatchVisibility(true)} disabled={batchBusy}
-                  className="btn-secondary text-xs py-1 px-2 disabled:opacity-50 shrink-0">
-                  Make public
-                </button>
-                <button onClick={() => handleBatchVisibility(false)} disabled={batchBusy}
-                  className="btn-secondary text-xs py-1 px-2 disabled:opacity-50 shrink-0">
-                  Make private
-                </button>
+                {multiUser && (
+                  <>
+                    <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 shrink-0" />
+                    <button onClick={() => handleBatchVisibility(true)} disabled={batchBusy}
+                      className="btn-secondary text-xs py-1 px-2 disabled:opacity-50 shrink-0">
+                      Make public
+                    </button>
+                    <button onClick={() => handleBatchVisibility(false)} disabled={batchBusy}
+                      className="btn-secondary text-xs py-1 px-2 disabled:opacity-50 shrink-0">
+                      Make private
+                    </button>
+                  </>
+                )}
                 <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 shrink-0" />
                 <button onClick={() => setConfirmBatchDelete(true)} disabled={batchBusy}
                   className="text-xs px-2 py-1 text-red-500 hover:text-red-400 transition-colors disabled:opacity-50 shrink-0">

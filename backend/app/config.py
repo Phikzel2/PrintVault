@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     allowed_origins: list[str] = ["*"]
     thingiverse_token: str = ""
     makerworld_token: str = ""
+    # Single-user is the default. Set MULTI_USER_MODE=true to expose user
+    # management, the public/private toggle, and the visibility filter.
+    multi_user_mode: bool = False
 
     class Config:
         env_file = ".env"

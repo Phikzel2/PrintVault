@@ -20,6 +20,9 @@ class User(UserBase):
     is_admin: bool
     settings: UserSettings
     created_at: datetime
+    # Server-config flag piggybacking on the user payload so the frontend
+    # has it as soon as it knows the current user.
+    multi_user_mode: bool = False
 
     class Config:
         from_attributes = True

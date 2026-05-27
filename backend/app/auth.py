@@ -58,6 +58,7 @@ def user_to_schema(user: models.User) -> schemas.User:
         is_admin=user.is_admin,
         settings=schemas.UserSettings(**settings_dict),
         created_at=user.created_at,
+        multi_user_mode=settings.multi_user_mode,
     )
 
 
