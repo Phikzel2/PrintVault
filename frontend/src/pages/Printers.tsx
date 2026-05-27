@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { printersApi } from "../api/client";
+import { useToast } from "../context/ToastContext";
 import type { Printer } from "../types";
+
+function errorMessage(err: unknown, fallback: string): string {
+  const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+  return typeof detail === "string" && detail ? detail : fallback;
+}
 
 const EMPTY_FORM = {
   name: "", brand: "", model_name: "",
@@ -52,8 +58,8 @@ function PrinterForm({
         notes: form.notes.trim() || null,
         moonraker_url: form.moonraker_url.trim() || null,
       });
-    } catch {
-      setError("Save failed");
+    } catch (err) {
+      setError(errorMessage(err, "Save failed"));
     } finally {
       setSaving(false);
     }
@@ -108,6 +114,7 @@ function PrinterForm({
 }
 
 export function Printers() {
+  const { showToast } = useToast();
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -121,22 +128,36 @@ export function Printers() {
   useEffect(() => { load(); }, []);
 
   const handleAdd = async (data: any) => {
-    await printersApi.create(data);
-    setAdding(false);
-    load();
+    try {
+      await printersApi.create(data);
+      setAdding(false);
+      load();
+    } catch (err) {
+      // PrinterForm catches and shows its own inline error, so re-throw to let it do that.
+      throw err;
+    }
   };
 
   const handleEdit = async (data: any) => {
     if (editId == null) return;
-    await printersApi.update(editId, data);
-    setEditId(null);
-    load();
+    try {
+      await printersApi.update(editId, data);
+      setEditId(null);
+      load();
+    } catch (err) {
+      throw err;
+    }
   };
 
   const handleDelete = async (id: number) => {
-    await printersApi.delete(id);
-    setDeleteId(null);
-    load();
+    try {
+      await printersApi.delete(id);
+      setDeleteId(null);
+      load();
+    } catch (err) {
+      showToast(errorMessage(err, "Failed to delete printer"), "error");
+      setDeleteId(null);
+    }
   };
 
   return (
