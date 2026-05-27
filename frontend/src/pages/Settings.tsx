@@ -52,7 +52,7 @@ export function Settings() {
         )}
         <PreferencesSection user={user} updateUser={updateUser} />
         <PasswordSection />
-        {user.is_admin && <UserManagementSection />}
+        {user.is_admin && user.multi_user_mode && <UserManagementSection />}
       </div>
     </div>
   );

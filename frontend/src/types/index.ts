@@ -83,6 +83,9 @@ export interface User {
   is_admin: boolean;
   settings: UserSettings;
   created_at: string;
+  // Server-config flag. When false, the multi-user UI (user management,
+  // public/private toggle, visibility filter) is hidden.
+  multi_user_mode: boolean;
 }
 
 export interface Token {

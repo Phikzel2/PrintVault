@@ -9,7 +9,8 @@ A self-hosted 3D print file library — your personal alternative to Printables,
 ## Features
 
 - **Multi-user** — JWT-based login, admin and regular users, per-user private libraries
-- **Public / Private models** — models are private by default; toggle visibility per model
+- **Public / Private models** *(multi-user mode)* — models are private by default; toggle visibility per model
+- **Single-user mode by default** — multi-user features (user management, public/private toggle, visibility filter) are hidden unless you set `MULTI_USER_MODE=true`
 - **3D viewer** — rotate, zoom, and inspect STL, 3MF, and OBJ files in the browser
 - **Auto thumbnails** — generated server-side on upload (CPU-only, no GPU required)
 - **File support** — STL, 3MF, GCODE, OBJ, STEP, AMF
@@ -85,6 +86,10 @@ ALLOWED_ORIGINS=["https://your-domain.com"]
 # MAKERWORLD_TOKEN=your_bambu_token_here  # JWT from your Bambu Lab account session
 # Printables import works without a token
 
+# Multi-user features (off by default — set to true to expose the user
+# management UI, public/private toggle, and visibility filter)
+# MULTI_USER_MODE=true
+
 # Optional tuning
 # MAX_FILE_SIZE_MB=500
 # JWT_EXPIRE_HOURS=168
@@ -156,14 +161,16 @@ Inside a model, the **Files** tab lists all attached files. For each file you ca
 - **Send to printer** — push a GCODE file directly to a Moonraker-enabled printer (button appears when the assigned printer has a Moonraker URL configured)
 - **Set as thumbnail** — use any file's auto-generated preview as the model thumbnail
 
-### Public / Private Visibility
+### Public / Private Visibility *(multi-user mode only)*
 
-Models are **private by default** — only you can see them. Toggle visibility on the model detail page:
+When `MULTI_USER_MODE=true`, models can be shared between users. Models are **private by default** — only you can see them. Toggle visibility on the model detail page:
 
 - **Private** — visible only to the owner
 - **Public** — visible to all logged-in users (shown with a globe badge)
 
 The sidebar filter lets you quickly switch between **All**, **Public**, and **Private** views.
+
+In single-user mode (the default), the toggle, badge, and visibility filter are all hidden — there's no audience to share with.
 
 ### Printer Profiles
 

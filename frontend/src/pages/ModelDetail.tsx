@@ -231,8 +231,8 @@ export function ModelDetail() {
             onAddFiles={() => setShowAddFiles(true)}
           />
 
-          {/* Visibility */}
-          {canEdit && (
+          {/* Visibility — only meaningful when multi-user is enabled */}
+          {canEdit && user?.multi_user_mode && (
             <div className="card p-4">
               <div className="flex items-center justify-between">
                 <div>

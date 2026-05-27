@@ -26,7 +26,8 @@ export function ModelCard({ model, selected = false, selectionActive = false, on
   const { theme } = useTheme();
   const [imgLoaded, setImgLoaded] = useState(false);
   const thumbUrl = model.thumbnail_path ? `${model.thumbnail_path}&theme=${theme}` : null;
-  const showPublicBadge = model.is_public;
+  // In single-user mode there's no audience to share with, so the badge is noise.
+  const showPublicBadge = model.is_public && !!user?.multi_user_mode;
 
   return (
     <div className={`group relative rounded-xl h-full ${selected ? "outline outline-2 outline-brand-500" : ""}`}>
