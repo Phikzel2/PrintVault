@@ -31,6 +31,7 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     _seed_admin()
     _check_upload_dir()
+    _warn_if_dormant_users()
     yield
 
 
@@ -50,6 +51,33 @@ def _seed_admin():
             db.add(admin)
             db.commit()
             logger.info("Created admin user: %s", settings.admin_username)
+    finally:
+        db.close()
+
+
+def _warn_if_dormant_users():
+    """Loudly warn when MULTI_USER_MODE=false but the DB still has more
+    than one user account. Those accounts can still log in and call the
+    API — hiding the UI does not deactivate them."""
+    if settings.multi_user_mode:
+        return
+    from .database import SessionLocal
+    from . import models as db_models
+
+    db = SessionLocal()
+    try:
+        count = db.query(db_models.User).count()
+        if count > 1:
+            logger.warning(
+                "================================================================\n"
+                "  MULTI_USER_MODE=false but %d user accounts exist in the DB.\n"
+                "  The multi-user UI is hidden, but those accounts can still log\n"
+                "  in and call the API directly. To actually disable them,\n"
+                "  temporarily set MULTI_USER_MODE=true and delete them from\n"
+                "  Settings -> User Management, or remove the rows via SQL.\n"
+                "================================================================",
+                count,
+            )
     finally:
         db.close()
 
