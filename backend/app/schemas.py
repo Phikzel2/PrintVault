@@ -160,3 +160,48 @@ class PaginatedModels(BaseModel):
     page: int
     page_size: int
     pages: int
+
+
+class CollectionBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = None
+
+    @field_validator("name")
+    @classmethod
+    def _name_not_blank(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("name must not be blank")
+        return v.strip()
+
+
+class CollectionCreate(CollectionBase):
+    pass
+
+
+class CollectionUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    description: Optional[str] = None
+
+    @field_validator("name")
+    @classmethod
+    def _name_not_blank(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not v.strip():
+            raise ValueError("name must not be blank")
+        return v.strip() if v is not None else v
+
+
+class Collection(CollectionBase):
+    id: int
+    owner_id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    model_count: int = 0
+    # Thumbnail of the most-recently-added model, for use as a cover.
+    cover_thumbnail: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CollectionDetail(Collection):
+    models: list[PrintModelSummary] = []

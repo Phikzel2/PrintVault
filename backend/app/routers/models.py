@@ -77,6 +77,7 @@ def list_models(
     tag: list[str] = Query(None),
     file_type: str = Query(None),
     visibility: str = Query(None),  # "public" | "private"
+    collection: int = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(24, ge=1, le=100),
     sort: str = Query("newest"),
@@ -112,6 +113,14 @@ def list_models(
 
     if file_type:
         q = q.filter(models.PrintModel.files.any(models.ModelFile.file_type == file_type.upper()))
+
+    if collection is not None:
+        # Scope to a collection the user owns (or any, if admin) so collection
+        # ids can't be used to probe other users' membership.
+        coll = db.query(models.Collection).filter(models.Collection.id == collection).first()
+        if not coll or (coll.owner_id != current_user.id and not current_user.is_admin):
+            raise HTTPException(status_code=404, detail="Collection not found")
+        q = q.filter(models.PrintModel.collections.any(models.Collection.id == collection))
 
     order = {
         "oldest": models.PrintModel.created_at.asc(),

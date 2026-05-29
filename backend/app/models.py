@@ -13,6 +13,14 @@ model_tags = Table(
     Column("tag_id", Integer, ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True),
 )
 
+collection_models = Table(
+    "collection_models",
+    Base.metadata,
+    Column("collection_id", Integer, ForeignKey("collections.id", ondelete="CASCADE"), primary_key=True),
+    Column("model_id", Integer, ForeignKey("print_models.id", ondelete="CASCADE"), primary_key=True),
+    Column("added_at", DateTime(timezone=True), server_default=func.now()),
+)
+
 
 class User(Base):
     __tablename__ = "users"
@@ -44,6 +52,7 @@ class PrintModel(Base):
     files = relationship("ModelFile", back_populates="model", cascade="all, delete-orphan")
     tags = relationship("Tag", secondary=model_tags, back_populates="models")
     owner = relationship("User", back_populates="models", foreign_keys=[owner_id])
+    collections = relationship("Collection", secondary=collection_models, back_populates="models")
 
 
 class ModelFile(Base):
@@ -88,3 +97,18 @@ class Tag(Base):
     name = Column(String(100), unique=True, nullable=False, index=True)
 
     models = relationship("PrintModel", secondary=model_tags, back_populates="tags")
+
+
+class Collection(Base):
+    __tablename__ = "collections"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    # Collections are personal organisation; delete them with their owner.
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    owner = relationship("User")
+    models = relationship("PrintModel", secondary=collection_models, back_populates="collections")
