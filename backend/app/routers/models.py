@@ -178,6 +178,7 @@ def get_model(
         .options(
             selectinload(models.PrintModel.files).selectinload(models.ModelFile.printer),
             selectinload(models.PrintModel.tags),
+            selectinload(models.PrintModel.collections),
         )
         .filter(models.PrintModel.id == model_id)
         .first()

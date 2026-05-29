@@ -124,6 +124,14 @@ class PrintModelUpdate(BaseModel):
         return v.strip() if v is not None else v
 
 
+class CollectionRef(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        from_attributes = True
+
+
 class PrintModel(PrintModelBase):
     id: int
     thumbnail_path: Optional[str] = None
@@ -133,6 +141,7 @@ class PrintModel(PrintModelBase):
     updated_at: Optional[datetime] = None
     files: list[ModelFile] = []
     tags: list[Tag] = []
+    collections: list[CollectionRef] = []
 
     class Config:
         from_attributes = True
