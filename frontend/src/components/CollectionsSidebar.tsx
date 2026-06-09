@@ -7,9 +7,11 @@ import { CollectionFormModal } from "./CollectionFormModal";
 interface Props {
   activeCollection: string;
   onSelect: (id: string) => void;
+  /** Bump to force a re-fetch (e.g. after a batch add elsewhere). */
+  refreshSignal?: number;
 }
 
-export function CollectionsSidebar({ activeCollection, onSelect }: Props) {
+export function CollectionsSidebar({ activeCollection, onSelect, refreshSignal }: Props) {
   const { showToast } = useToast();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [showCreate, setShowCreate] = useState(false);
@@ -20,7 +22,7 @@ export function CollectionsSidebar({ activeCollection, onSelect }: Props) {
     collectionsApi.list().then((r) => setCollections(r.data)).catch(() => {});
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, [load, refreshSignal]);
 
   const remove = async (c: Collection) => {
     try {
