@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { modelsApi, filesApi, printersApi } from "../api/client";
 import { ModelViewer } from "../components/ModelViewer";
 import { AddFilesModal } from "../components/AddFilesModal";
+import { AddToCollectionMenu } from "../components/AddToCollectionMenu";
 import { FilesSection } from "../components/FilesSection";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -176,11 +177,20 @@ export function ModelDetail() {
                 <div className="flex items-start justify-between gap-2">
                   <h1 className="text-lg font-semibold text-gray-900 dark:text-white leading-snug">{model.name}</h1>
                   {canEdit && (
-                    <button onClick={() => setEditing(true)} className="btn-ghost p-1.5 rounded shrink-0" title="Edit">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <AddToCollectionMenu
+                        modelIds={[model.id]}
+                        memberOf={model.collections.map((c) => c.id)}
+                        onChanged={loadModel}
+                        buttonClassName="btn-ghost p-1.5 rounded"
+                        label=""
+                      />
+                      <button onClick={() => setEditing(true)} className="btn-ghost p-1.5 rounded" title="Edit">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                    </div>
                   )}
                 </div>
                 {model.thumbnail_path && (
@@ -203,6 +213,18 @@ export function ModelDetail() {
                     {model.tags.map((t) => (
                       <Link key={t.id} to={`/?tag=${encodeURIComponent(t.name)}`} className="text-xs px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-400 rounded-full transition-colors">
                         {t.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                {model.collections.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1 mt-2">
+                    <svg className="w-3.5 h-3.5 text-gray-400 dark:text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 12h14M5 16h7" />
+                    </svg>
+                    {model.collections.map((c) => (
+                      <Link key={c.id} to={`/?collection=${c.id}`} className="text-xs px-2 py-0.5 bg-brand-600/10 hover:bg-brand-600/20 text-brand-500 dark:text-brand-400 rounded-full transition-colors">
+                        {c.name}
                       </Link>
                     ))}
                   </div>

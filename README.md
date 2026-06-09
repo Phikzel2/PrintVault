@@ -16,6 +16,7 @@ A self-hosted 3D print file library — your personal alternative to Printables,
 - **File support** — STL, 3MF, GCODE, OBJ, STEP, AMF
 - **Moonraker integration** — push GCODE files directly to a Klipper printer via Moonraker
 - **Printer profiles** — define printers (brand, build volume, Moonraker URL) and link GCODE files
+- **Collections** — group models into named, personal collections (curated, unlike tags); filter the library by collection and add/remove from the model page or in bulk
 - **Tags & search** — tag models and filter by tag, file type, or visibility; search bar supports keyword and `#tag` syntax with live autocomplete
 - **Open in slicer** — one-click open of STL/3MF files in OrcaSlicer, PrusaSlicer, SuperSlicer, or Ultimaker Cura
 - **Light / dark mode** — toggle in the header, preference persisted in localStorage
@@ -188,6 +189,15 @@ Each printer can have:
 
 Once a printer has a **Moonraker URL**, a send button appears next to any GCODE file assigned to that printer. PrintVault proxies the upload to Moonraker's `/server/files/upload` endpoint — no direct browser-to-printer connection needed.
 
+### Collections
+
+Collections are personal, named groups of models — the curated counterpart to tags. A model can live in any number of collections, and deleting a collection never deletes the models inside it.
+
+- **Create / rename / delete** — use the **+** and hover actions in the **Collections** section of the library sidebar
+- **Add to a collection** — open the collection menu on a model's detail page (checkmarks show current membership; click to toggle), or select multiple models in the library and use the batch **Collection** action
+- **Browse** — click a collection in the sidebar to filter the library to its models
+- Collections are private to their owner; they're available in both single-user and multi-user mode
+
 ### Tags & Search
 
 - **Keyword search** — type any text and press Enter to search model names
@@ -250,6 +260,7 @@ PrintVault/
 │           ├── files.py      # Upload, download, delete, Moonraker proxy, GCODE metadata
 │           ├── imports.py    # URL import from Printables, Thingiverse, MakerWorld
 │           ├── stats.py      # Storage stats aggregation
+│           ├── collections.py # Personal collection CRUD + membership
 │           ├── printers.py   # Printer profile CRUD
 │           └── tags.py       # Tag listing
 ├── frontend/                 # React SPA (Vite + Tailwind)
@@ -330,6 +341,15 @@ DELETE /api/printers/{id}           Delete printer
 
 # Tags
 GET    /api/tags                    List all tags
+
+# Collections
+GET    /api/collections                       List own collections
+POST   /api/collections                       Create collection
+GET    /api/collections/{id}                  Collection detail + member models
+PUT    /api/collections/{id}                  Rename / edit
+DELETE /api/collections/{id}                  Delete collection (keeps models)
+POST   /api/collections/{id}/models/{mid}     Add model to collection
+DELETE /api/collections/{id}/models/{mid}     Remove model from collection
 
 # Import
 POST   /api/import/preview          Fetch model metadata from a URL (no DB changes)

@@ -44,6 +44,7 @@ export interface PrintModel {
   updated_at: string | null;
   files: ModelFile[];
   tags: Tag[];
+  collections: { id: number; name: string }[];
 }
 
 export interface PrintModelSummary {
@@ -61,6 +62,21 @@ export interface PrintModelSummary {
   stl_count: number;
   threemf_count: number;
   gcode_count: number;
+}
+
+export interface Collection {
+  id: number;
+  name: string;
+  description: string | null;
+  owner_id: number;
+  created_at: string;
+  updated_at: string | null;
+  model_count: number;
+  cover_thumbnail: string | null;
+}
+
+export interface CollectionDetail extends Collection {
+  models: PrintModelSummary[];
 }
 
 export interface PaginatedModels {
