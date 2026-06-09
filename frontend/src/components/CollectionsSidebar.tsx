@@ -75,10 +75,10 @@ export function CollectionsSidebar({ activeCollection, onSelect }: Props) {
                 ) : (
                   <>
                     <button onClick={() => onSelect(String(c.id))} className={itemClass(activeCollection === String(c.id))}>
-                      <span className="truncate flex-1 min-w-0">{c.name}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-600 shrink-0 ml-2 tabular-nums">{c.model_count}</span>
+                      <span className="truncate">{c.name}</span>
                     </button>
-                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <span className="text-xs text-gray-500 dark:text-gray-600 shrink-0 tabular-nums pr-1 group-hover:hidden">{c.model_count}</span>
+                    <div className="hidden group-hover:flex items-center shrink-0">
                       <button onClick={() => setEditing(c)} className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" data-tooltip="Rename">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
