@@ -35,7 +35,7 @@ export function CollectionsSidebar({ activeCollection, onSelect }: Props) {
   };
 
   const itemClass = (active: boolean) =>
-    `flex-1 text-left text-sm px-2 py-1.5 rounded-lg transition-colors truncate ${
+    `flex-1 min-w-0 text-left text-sm px-2 py-1.5 rounded-lg transition-colors truncate ${
       active
         ? "bg-brand-600/20 text-brand-400"
         : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
@@ -56,7 +56,7 @@ export function CollectionsSidebar({ activeCollection, onSelect }: Props) {
         </button>
       </div>
 
-      <div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
+      <div className="flex flex-col gap-1 max-h-64 overflow-y-auto overflow-x-hidden">
         {collections.length === 0 ? (
           <p className="text-xs text-gray-400 dark:text-gray-600 px-2 py-1">None yet</p>
         ) : (
@@ -65,7 +65,7 @@ export function CollectionsSidebar({ activeCollection, onSelect }: Props) {
               All models
             </button>
             {collections.map((c) => (
-              <div key={c.id} className="group flex items-center gap-1">
+              <div key={c.id} className="group flex items-center gap-1 min-w-0">
                 {confirmDelete === c.id ? (
                   <div className="flex-1 flex items-center gap-1 px-2 py-1">
                     <span className="text-xs text-red-400 flex-1 truncate">Delete "{c.name}"?</span>
