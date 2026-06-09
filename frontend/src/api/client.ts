@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { GcodeMetadata, ImportFile, ImportPreview, PaginatedModels, PrintModel, PrintModelSummary, Printer, StorageStats, Tag, Token, User, UserSettings } from "../types";
+import type { Collection, CollectionDetail, GcodeMetadata, ImportFile, ImportPreview, PaginatedModels, PrintModel, PrintModelSummary, Printer, StorageStats, Tag, Token, User, UserSettings } from "../types";
 
 const api = axios.create({
   baseURL: "/api",
@@ -52,6 +52,7 @@ export const modelsApi = {
     tag?: string[];
     file_type?: string;
     visibility?: string;
+    collection?: number;
     sort?: string;
     page?: number;
     page_size?: number;
@@ -119,6 +120,20 @@ export const importApi = {
 
 export const statsApi = {
   storage: () => api.get<StorageStats>("/stats/storage"),
+};
+
+export const collectionsApi = {
+  list: () => api.get<Collection[]>("/collections"),
+  get: (id: number) => api.get<CollectionDetail>(`/collections/${id}`),
+  create: (data: { name: string; description?: string | null }) =>
+    api.post<Collection>("/collections", data),
+  update: (id: number, data: { name?: string; description?: string | null }) =>
+    api.put<Collection>(`/collections/${id}`, data),
+  delete: (id: number) => api.delete(`/collections/${id}`),
+  addModel: (id: number, modelId: number) =>
+    api.post<Collection>(`/collections/${id}/models/${modelId}`),
+  removeModel: (id: number, modelId: number) =>
+    api.delete<Collection>(`/collections/${id}/models/${modelId}`),
 };
 
 async function fetchSignedDownloadUrl(id: number, filename: string): Promise<string> {
