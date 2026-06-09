@@ -35,7 +35,7 @@ export function CollectionsSidebar({ activeCollection, onSelect }: Props) {
   };
 
   const itemClass = (active: boolean) =>
-    `flex-1 min-w-0 text-left text-sm px-2 py-1.5 rounded-lg transition-colors truncate ${
+    `flex-1 min-w-0 flex items-center text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${
       active
         ? "bg-brand-600/20 text-brand-400"
         : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
@@ -75,7 +75,8 @@ export function CollectionsSidebar({ activeCollection, onSelect }: Props) {
                 ) : (
                   <>
                     <button onClick={() => onSelect(String(c.id))} className={itemClass(activeCollection === String(c.id))}>
-                      {c.name} <span className="text-gray-400 dark:text-gray-600">{c.model_count}</span>
+                      <span className="truncate flex-1 min-w-0">{c.name}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-600 shrink-0 ml-2 tabular-nums">{c.model_count}</span>
                     </button>
                     <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                       <button onClick={() => setEditing(c)} className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" data-tooltip="Rename">
