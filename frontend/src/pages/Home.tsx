@@ -41,6 +41,7 @@ export function Home() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [collectionsRefresh, setCollectionsRefresh] = useState(0);
   const [tagsCollapsed, setTagsCollapsed] = useState(() => localStorage.getItem("tagsCollapsed") === "1");
   const [showUpload, setShowUpload] = useState(false);
   const [externalDrag, setExternalDrag] = useState(false);
@@ -238,6 +239,7 @@ export function Home() {
             <CollectionsSidebar
               activeCollection={activeCollection}
               onSelect={(id) => setParam("collection", id)}
+              refreshSignal={collectionsRefresh}
             />
 
             {multiUser && (
@@ -440,7 +442,7 @@ export function Home() {
                   modelIds={[...selectedIds]}
                   dropUp
                   buttonClassName="btn-secondary text-xs py-1.5 px-3 w-full flex items-center justify-center gap-1.5"
-                  onChanged={clearSelection}
+                  onChanged={() => { clearSelection(); setCollectionsRefresh((n) => n + 1); }}
                 />
                 {/* Row 3: visibility + delete (visibility hidden in single-user mode) */}
                 <div className="flex items-center gap-2">
@@ -492,7 +494,7 @@ export function Home() {
                   dropUp
                   buttonClassName="btn-secondary text-xs py-1 px-2 shrink-0 flex items-center gap-1.5"
                   label="Collection"
-                  onChanged={clearSelection}
+                  onChanged={() => { clearSelection(); setCollectionsRefresh((n) => n + 1); }}
                 />
                 {multiUser && (
                   <>
