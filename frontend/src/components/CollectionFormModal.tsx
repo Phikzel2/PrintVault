@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { collectionsApi } from "../api/client";
 import { useEscapeKey } from "../hooks/useEscapeKey";
 import type { Collection } from "../types";
@@ -35,7 +36,7 @@ export function CollectionFormModal({ initial, onClose, onSaved }: Props) {
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl w-full max-w-md flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800">
@@ -81,6 +82,7 @@ export function CollectionFormModal({ initial, onClose, onSaved }: Props) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
