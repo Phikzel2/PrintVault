@@ -72,6 +72,21 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   const chipTagsRef = useRef(chipTags);
   useEffect(() => { chipTagsRef.current = chipTags; }, [chipTags]);
 
+  // Latest params, for building new URLs without dropping filters the search
+  // box doesn't own (collection, type, visibility, sort). Ref so the debounced
+  // effect always reads current values without re-subscribing.
+  const searchParamsRef = useRef(searchParams);
+  useEffect(() => { searchParamsRef.current = searchParams; }, [searchParams]);
+  const buildSearchUrl = (text: string, tagNames: string[]): string => {
+    const next = new URLSearchParams(searchParamsRef.current);
+    next.delete("search");
+    next.delete("tag");
+    next.delete("page");
+    if (text) next.set("search", text);
+    tagNames.forEach((t) => next.append("tag", t));
+    return next.toString() ? `/?${next.toString()}` : "/";
+  };
+
   // Text input holds only the free-text portion
   const [searchText, setSearchText] = useState(() => searchParams.get("search") ?? "");
   useEffect(() => {
@@ -105,10 +120,7 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
     const timer = setTimeout(() => {
       const { text, tags: typedTags } = parseSearchInput(searchText);
       const allTagNames = [...new Set([...chipTagsRef.current, ...typedTags])];
-      const next = new URLSearchParams();
-      if (text) next.set("search", text);
-      allTagNames.forEach(t => next.append("tag", t));
-      navigate(next.toString() ? `/?${next.toString()}` : "/");
+      navigate(buildSearchUrl(text, allTagNames));
     }, 350);
     return () => clearTimeout(timer);
   }, [searchText, navigate, location.pathname]);
@@ -168,7 +180,7 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
   useEffect(() => {
     const inputs = [desktopInputRef.current, mobileInputRef.current].filter(Boolean);
     const handler = (e: Event) => {
-      if ((e.target as HTMLInputElement).value === "") navigate("/");
+      if ((e.target as HTMLInputElement).value === "") navigate(buildSearchUrl("", chipTagsRef.current));
     };
     inputs.forEach(i => i!.addEventListener("search", handler));
     return () => inputs.forEach(i => i!.removeEventListener("search", handler));
@@ -187,10 +199,7 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
 
   const removeChip = (tagToRemove: string) => {
     const remaining = chipTags.filter(t => t !== tagToRemove);
-    const next = new URLSearchParams();
-    if (searchText) next.set("search", searchText);
-    remaining.forEach(t => next.append("tag", t));
-    navigate(next.toString() ? `/?${next.toString()}` : "/");
+    navigate(buildSearchUrl(searchText, remaining));
   };
 
   const refreshSuggestions = (value: string, cursor: number) => {
@@ -216,10 +225,7 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
     setDropdownOpen(false);
 
     const allTagNames = [...new Set([...chipTags, tag.name.toLowerCase()])];
-    const next = new URLSearchParams();
-    if (newText) next.set("search", newText);
-    allTagNames.forEach(t => next.append("tag", t));
-    navigate(next.toString() ? `/?${next.toString()}` : "/");
+    navigate(buildSearchUrl(newText, allTagNames));
 
     requestAnimationFrame(() => activeInput()?.focus());
   };
@@ -275,10 +281,7 @@ export function Header({ onAddModel, onImport }: HeaderProps) {
     setDropdownOpen(false);
     const { text, tags: typedTags } = parseSearchInput(searchText);
     const allTagNames = [...new Set([...chipTags, ...typedTags])];
-    const next = new URLSearchParams();
-    if (text) next.set("search", text);
-    allTagNames.forEach(t => next.append("tag", t));
-    navigate(next.toString() ? `/?${next.toString()}` : "/");
+    navigate(buildSearchUrl(text, allTagNames));
   };
 
   const dropdownEl = dropdownOpen ? (
