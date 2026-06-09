@@ -64,8 +64,15 @@ export function CollectionsSidebar({ activeCollection, onSelect }: Props) {
             <button onClick={() => onSelect("")} className={itemClass(!activeCollection)}>
               All models
             </button>
-            {collections.map((c) => (
-              <div key={c.id} className="group flex items-center gap-1 min-w-0">
+            {collections.map((c) => {
+              const active = activeCollection === String(c.id);
+              return (
+              <div
+                key={c.id}
+                className={`group flex items-center gap-1 min-w-0 rounded-lg transition-colors ${
+                  active ? "bg-brand-600/20" : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                }`}
+              >
                 {confirmDelete === c.id ? (
                   <div className="flex-1 flex items-center gap-1 px-2 py-1">
                     <span className="text-xs text-red-400 flex-1 truncate">Delete "{c.name}"?</span>
@@ -74,11 +81,16 @@ export function CollectionsSidebar({ activeCollection, onSelect }: Props) {
                   </div>
                 ) : (
                   <>
-                    <button onClick={() => onSelect(String(c.id))} className={itemClass(activeCollection === String(c.id))}>
+                    <button
+                      onClick={() => onSelect(String(c.id))}
+                      className={`flex-1 min-w-0 flex items-center text-left text-sm px-2 py-1.5 ${
+                        active ? "text-brand-400" : "text-gray-600 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-gray-200"
+                      }`}
+                    >
                       <span className="truncate">{c.name}</span>
                     </button>
-                    <span className="text-xs text-gray-500 dark:text-gray-600 shrink-0 tabular-nums pr-1 group-hover:hidden">{c.model_count}</span>
-                    <div className="hidden group-hover:flex items-center shrink-0">
+                    <span className="text-xs text-gray-500 dark:text-gray-600 shrink-0 tabular-nums pr-2 group-hover:hidden">{c.model_count}</span>
+                    <div className="hidden group-hover:flex items-center shrink-0 pr-1">
                       <button onClick={() => setEditing(c)} className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" data-tooltip="Rename">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -93,7 +105,8 @@ export function CollectionsSidebar({ activeCollection, onSelect }: Props) {
                   </>
                 )}
               </div>
-            ))}
+              );
+            })}
           </>
         )}
       </div>
