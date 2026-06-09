@@ -41,6 +41,7 @@ export function Home() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [tagsCollapsed, setTagsCollapsed] = useState(() => localStorage.getItem("tagsCollapsed") === "1");
   const [showUpload, setShowUpload] = useState(false);
   const [externalDrag, setExternalDrag] = useState(false);
   const [dropFiles, setDropFiles] = useState<File[] | undefined>(undefined);
@@ -258,24 +259,39 @@ export function Home() {
 
             {tags.length > 0 && (
               <div>
-                <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wider mb-2">Tags</h3>
-                <div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
-                  <button
-                    onClick={() => setParam("tag", "")}
-                    className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${!activeTags.length ? "bg-brand-600/20 text-brand-400" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"}`}
+                <button
+                  onClick={() => setTagsCollapsed((v) => { const next = !v; localStorage.setItem("tagsCollapsed", next ? "1" : "0"); return next; })}
+                  className="w-full flex items-center justify-between mb-2 group"
+                >
+                  <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-wider">
+                    Tags {activeTags.length > 0 && <span className="text-brand-400">({activeTags.length})</span>}
+                  </h3>
+                  <svg
+                    className={`w-3.5 h-3.5 text-gray-400 dark:text-gray-600 group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-transform ${tagsCollapsed ? "-rotate-90" : ""}`}
+                    fill="currentColor" viewBox="0 0 20 20"
                   >
-                    All tags
-                  </button>
-                  {tags.map((tag) => (
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                {!tagsCollapsed && (
+                  <div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
                     <button
-                      key={tag.id}
-                      onClick={() => setParam("tag", activeTags.includes(tag.name) ? "" : tag.name)}
-                      className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${activeTags.includes(tag.name) ? "bg-brand-600/20 text-brand-400" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"}`}
+                      onClick={() => setParam("tag", "")}
+                      className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${!activeTags.length ? "bg-brand-600/20 text-brand-400" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"}`}
                     >
-                      {tag.name}
+                      All tags
                     </button>
-                  ))}
-                </div>
+                    {tags.map((tag) => (
+                      <button
+                        key={tag.id}
+                        onClick={() => setParam("tag", activeTags.includes(tag.name) ? "" : tag.name)}
+                        className={`text-left text-sm px-2 py-1.5 rounded-lg transition-colors ${activeTags.includes(tag.name) ? "bg-brand-600/20 text-brand-400" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"}`}
+                      >
+                        {tag.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
