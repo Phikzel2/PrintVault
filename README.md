@@ -45,6 +45,22 @@ A self-hosted 3D print file library — your personal alternative to Printables,
 
 **Prerequisites:** Docker + Docker Compose
 
+### Run from published images (recommended)
+
+No clone or build needed — pull the prebuilt multi-arch images (amd64 + arm64, so Raspberry Pi works) from GHCR:
+
+```bash
+curl -O https://raw.githubusercontent.com/Phikzel2/PrintVault/main/docker-compose.prod.yml
+curl -o .env https://raw.githubusercontent.com/Phikzel2/PrintVault/main/.env.example
+# Edit .env — set strong passwords and a SECRET_KEY at minimum
+
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Images are published to `ghcr.io/phikzel2/printvault-backend` and `ghcr.io/phikzel2/printvault-frontend`. By default you get `:latest`; pin a release with `PRINTVAULT_TAG=1.0.0` in `.env`.
+
+### Build from source
+
 ```bash
 git clone git@github.com:Phikzel2/PrintVault.git
 cd PrintVault
