@@ -1,0 +1,55 @@
+# Production compose — runs PrintVault from prebuilt images on GHCR.
+# No clone/build needed; just this file + a .env.
+#
+#   curl -O https://raw.githubusercontent.com/Phikzel2/PrintVault/main/docker-compose.prod.yml
+#   curl -O https://raw.githubusercontent.com/Phikzel2/PrintVault/main/.env.example && mv .env.example .env
+#   # edit .env — set strong passwords and SECRET_KEY
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Pin a version with PRINTVAULT_TAG=1.0.0 in your .env (defaults to latest).
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-printvault}
+      POSTGRES_USER: ${POSTGRES_USER:-printvault}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-printvault}
+    volumes:
+      - ./data/postgres/db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-printvault}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: ghcr.io/phikzel2/printvault-backend:${PRINTVAULT_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-printvault}:${POSTGRES_PASSWORD:-printvault}@db:5432/${POSTGRES_DB:-printvault}
+      UPLOAD_DIR: /data/uploads
+      SECRET_KEY: ${SECRET_KEY:-changeme-in-production}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-["http://localhost:3120"]}
+      THINGIVERSE_TOKEN: ${THINGIVERSE_TOKEN:-}
+      MAKERWORLD_TOKEN: ${MAKERWORLD_TOKEN:-}
+      MULTI_USER_MODE: ${MULTI_USER_MODE:-false}
+    volumes:
+      - ./data/uploads:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    # Bind to loopback only — the backend is reachable via the docker network
+    # from the frontend container. Don't expose it on the host's public IP.
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  frontend:
+    image: ghcr.io/phikzel2/printvault-frontend:${PRINTVAULT_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "3120:80"
+    depends_on:
+      - backend
