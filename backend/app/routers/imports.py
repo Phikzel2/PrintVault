@@ -17,7 +17,7 @@ from ..auth import get_current_user
 from ..config import settings
 from ..constants import detect_file_type
 from ..database import get_db
-from ..thumbnail import generate_thumbnail
+from ..thumbnail import generate_thumbnails
 
 logger = logging.getLogger(__name__)
 
@@ -452,8 +452,8 @@ async def confirm_import(
             db.commit()
 
             if not thumbnail_set and f.file_type in ("STL", "3MF", "OBJ"):
-                thumb_path = str(Path(settings.upload_dir) / "models" / str(db_model.id) / "thumbnail.jpg")
-                if generate_thumbnail(str(file_path), thumb_path):
+                thumb_dir = str(Path(settings.upload_dir) / "models" / str(db_model.id))
+                if generate_thumbnails(str(file_path), thumb_dir):
                     db_model.thumbnail_path = f"/api/models/{db_model.id}/thumbnail?v={int(time.time())}"
                     db.commit()
                     thumbnail_set = True

@@ -196,3 +196,13 @@ def generate_thumbnail(file_path: str, output_path: str, style: str = "dark") ->
     except Exception as e:
         logger.warning("Thumbnail generation failed for %s: %s", file_path, e)
         return False
+
+
+def generate_thumbnails(file_path: str, model_dir: str) -> bool:
+    """Render both themed thumbnails (thumbnail_dark.jpg + thumbnail_light.jpg)
+    into model_dir. The viewer serves thumbnail_{theme}.jpg, so both variants
+    must exist for the light/dark preview to match the active theme.
+    Returns True if at least one render succeeded."""
+    ok_dark = generate_thumbnail(file_path, os.path.join(model_dir, "thumbnail_dark.jpg"), style="dark")
+    ok_light = generate_thumbnail(file_path, os.path.join(model_dir, "thumbnail_light.jpg"), style="light")
+    return ok_dark or ok_light

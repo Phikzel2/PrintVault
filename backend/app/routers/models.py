@@ -292,7 +292,7 @@ def set_thumbnail(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    from ..thumbnail import generate_thumbnail
+    from ..thumbnail import generate_thumbnails
 
     model = db.query(models.PrintModel).filter(models.PrintModel.id == model_id).first()
     if not model:
@@ -311,9 +311,7 @@ def set_thumbnail(
         raise HTTPException(status_code=400, detail="File type does not support thumbnail generation")
 
     model_dir = Path(settings.upload_dir) / "models" / str(model_id)
-    ok_dark = generate_thumbnail(db_file.file_path, str(model_dir / "thumbnail_dark.jpg"), style="dark")
-    ok_light = generate_thumbnail(db_file.file_path, str(model_dir / "thumbnail_light.jpg"), style="light")
-    if not ok_dark and not ok_light:
+    if not generate_thumbnails(db_file.file_path, str(model_dir)):
         raise HTTPException(status_code=500, detail="Thumbnail generation failed")
 
     model.thumbnail_path = f"/api/models/{model_id}/thumbnail?v={int(time.time())}"
