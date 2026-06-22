@@ -101,7 +101,7 @@ def _check_upload_dir():
     logger.info("Upload directory OK: %s", path)
 
 
-app = FastAPI(title="PrintVault", version="1.0.1", lifespan=lifespan, redirect_slashes=False)
+app = FastAPI(title="PrintVault", version="1.0.2", lifespan=lifespan, redirect_slashes=False)
 
 # Trust X-Forwarded-For / X-Forwarded-Proto from upstream reverse proxy
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
