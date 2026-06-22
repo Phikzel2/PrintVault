@@ -128,4 +128,4 @@ app.include_router(collections.router, prefix="/api")
 @app.get("/api/health")
 def health():
     upload_ok = os.path.exists(settings.upload_dir) and os.access(settings.upload_dir, os.W_OK)
-    return {"status": "ok", "upload_dir": settings.upload_dir, "upload_writable": upload_ok}
+    return {"status": "ok", "version": app.version, "upload_dir": settings.upload_dir, "upload_writable": upload_ok}
