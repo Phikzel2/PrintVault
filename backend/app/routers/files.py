@@ -16,7 +16,7 @@ from ..auth import create_download_token, get_current_user, get_user_for_downloa
 from ..config import settings
 from ..constants import detect_file_type
 from ..database import get_db
-from ..thumbnail import generate_thumbnail
+from ..thumbnail import generate_thumbnails
 
 
 def _can_view_model(model: "models.PrintModel", user: "models.User") -> bool:
@@ -192,8 +192,7 @@ async def upload_file(
     # Generate thumbnail — non-fatal if it fails
     if not model.thumbnail_path and file_type in ("STL", "3MF", "OBJ"):
         thumb_dir = Path(settings.upload_dir) / "models" / str(model_id)
-        thumb_path = str(thumb_dir / "thumbnail.jpg")
-        if generate_thumbnail(str(file_path), thumb_path):
+        if generate_thumbnails(str(file_path), str(thumb_dir)):
             model.thumbnail_path = f"/api/models/{model_id}/thumbnail?v={int(time.time())}"
             db.commit()
 
