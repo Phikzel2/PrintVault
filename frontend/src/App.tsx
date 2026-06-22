@@ -13,6 +13,7 @@ import { Storage } from "./pages/Storage";
 import { Login } from "./pages/Login";
 import { UploadModal } from "./components/UploadModal";
 import { ImportModal } from "./components/ImportModal";
+import { VersionBadge } from "./components/VersionBadge";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -89,6 +90,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/*" element={<AppShell />} />
           </Routes>
+          <VersionBadge />
         </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
